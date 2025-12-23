@@ -1,0 +1,41 @@
+{
+  "name": "crm-inventory-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MuhammadMTechHub/CRM-inventory-backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MuhammadMTechHub/CRM-inventory-backend/issues"
+  },
+  "homepage": "https://github.com/MuhammadMTechHub/CRM-inventory-backend#readme",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.2",
+    "cloudinary": "^2.6.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "fluent-ffmpeg": "^2.1.2",
+    "get-video-duration": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.29.4",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.5",
+    "nodemon": "^3.1.4",
+    "pg": "^8.11.3",
+    "pg-hstore": "^2.3.4",
+    "stripe": "^14.25.0",
+    "uuid": "^9.0.1"
+  }
+}
