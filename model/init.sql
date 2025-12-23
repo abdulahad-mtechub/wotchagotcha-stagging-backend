@@ -13,11 +13,13 @@ CREATE TABLE IF NOT EXISTS public.users (
     badge VARCHAR(255),
     subscription_amount BIGINT,
     block BOOLEAN DEFAULT FALSE,
-    device_id TEXT NOT NULL,
+    device_id TEXT,
     customer_id VARCHAR(255),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+-- Ensure existing installations have nullable device_id
+ALTER TABLE IF EXISTS public.users ALTER COLUMN device_id DROP NOT NULL;
 CREATE TABLE IF NOT EXISTS public.app_category (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,

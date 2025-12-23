@@ -1,0 +1,3026 @@
+{
+  "Mass Apps": {
+    "Politics": [
+      {
+        "name": "Politics - Overview",
+        "french_name": "Politique - Aperçu"
+      },
+      {
+        "name": "Politics - Guides",
+        "french_name": "Politique - Guides"
+      },
+      {
+        "name": "Politics - Trends",
+        "french_name": "Politique - Tendances"
+      }
+    ],
+    "Business": [
+      {
+        "name": "Business - Overview",
+        "french_name": "Affaires - Aperçu"
+      },
+      {
+        "name": "Business - Guides",
+        "french_name": "Affaires - Guides"
+      },
+      {
+        "name": "Business - Trends",
+        "french_name": "Affaires - Tendances"
+      }
+    ],
+    "Education": [
+      {
+        "name": "Education - Overview",
+        "french_name": "Éducation - Aperçu"
+      },
+      {
+        "name": "Education - Guides",
+        "french_name": "Éducation - Guides"
+      },
+      {
+        "name": "Education - Trends",
+        "french_name": "Éducation - Tendances"
+      }
+    ],
+    "E-Commerce": [
+      {
+        "name": "E-Commerce - Overview",
+        "french_name": "E-Commerce - Aperçu"
+      },
+      {
+        "name": "E-Commerce - Guides",
+        "french_name": "E-Commerce - Guides"
+      },
+      {
+        "name": "E-Commerce - Trends",
+        "french_name": "E-Commerce - Tendances"
+      }
+    ],
+    "Sports": [
+      {
+        "name": "Sports - Overview",
+        "french_name": "Sports - Aperçu"
+      },
+      {
+        "name": "Sports - Guides",
+        "french_name": "Sports - Guides"
+      },
+      {
+        "name": "Sports - Trends",
+        "french_name": "Sports - Tendances"
+      }
+    ],
+    "Dating": [
+      {
+        "name": "Dating - Overview",
+        "french_name": "Rencontres - Aperçu"
+      },
+      {
+        "name": "Dating - Guides",
+        "french_name": "Rencontres - Guides"
+      },
+      {
+        "name": "Dating - Trends",
+        "french_name": "Rencontres - Tendances"
+      }
+    ],
+    "Lifestyle": [
+      {
+        "name": "Lifestyle - Overview",
+        "french_name": "Style de Vie - Aperçu"
+      },
+      {
+        "name": "Lifestyle - Guides",
+        "french_name": "Style de Vie - Guides"
+      },
+      {
+        "name": "Lifestyle - Trends",
+        "french_name": "Style de Vie - Tendances"
+      }
+    ],
+    "Finance": [
+      {
+        "name": "Finance - Overview",
+        "french_name": "Finance - Aperçu"
+      },
+      {
+        "name": "Finance - Guides",
+        "french_name": "Finance - Guides"
+      },
+      {
+        "name": "Finance - Trends",
+        "french_name": "Finance - Tendances"
+      }
+    ],
+    "Entertainment": [
+      {
+        "name": "Entertainment - Overview",
+        "french_name": "Divertissement - Aperçu"
+      },
+      {
+        "name": "Entertainment - Guides",
+        "french_name": "Divertissement - Guides"
+      },
+      {
+        "name": "Entertainment - Trends",
+        "french_name": "Divertissement - Tendances"
+      }
+    ],
+    "Fitness & Health": [
+      {
+        "name": "Fitness & Health - Overview",
+        "french_name": "Fitness & Santé - Aperçu"
+      },
+      {
+        "name": "Fitness & Health - Guides",
+        "french_name": "Fitness & Santé - Guides"
+      },
+      {
+        "name": "Fitness & Health - Trends",
+        "french_name": "Fitness & Santé - Tendances"
+      }
+    ],
+    "Beauty & Fashion": [
+      {
+        "name": "Beauty & Fashion - Overview",
+        "french_name": "Beauté & Mode - Aperçu"
+      },
+      {
+        "name": "Beauty & Fashion - Guides",
+        "french_name": "Beauté & Mode - Guides"
+      },
+      {
+        "name": "Beauty & Fashion - Trends",
+        "french_name": "Beauté & Mode - Tendances"
+      }
+    ],
+    "Grocery & Shopping": [
+      {
+        "name": "Grocery & Shopping - Overview",
+        "french_name": "Épicerie & Shopping - Aperçu"
+      },
+      {
+        "name": "Grocery & Shopping - Guides",
+        "french_name": "Épicerie & Shopping - Guides"
+      },
+      {
+        "name": "Grocery & Shopping - Trends",
+        "french_name": "Épicerie & Shopping - Tendances"
+      }
+    ],
+    "Art": [
+      {
+        "name": "Art - Overview",
+        "french_name": "Art - Aperçu"
+      },
+      {
+        "name": "Art - Guides",
+        "french_name": "Art - Guides"
+      },
+      {
+        "name": "Art - Trends",
+        "french_name": "Art - Tendances"
+      }
+    ],
+    "Gaming": [
+      {
+        "name": "Gaming - Overview",
+        "french_name": "Gaming - Aperçu"
+      },
+      {
+        "name": "Gaming - Guides",
+        "french_name": "Gaming - Guides"
+      },
+      {
+        "name": "Gaming - Trends",
+        "french_name": "Gaming - Tendances"
+      }
+    ],
+    "Multimedia": [
+      {
+        "name": "Multimedia - Overview",
+        "french_name": "Multimédia - Aperçu"
+      },
+      {
+        "name": "Multimedia - Guides",
+        "french_name": "Multimédia - Guides"
+      },
+      {
+        "name": "Multimedia - Trends",
+        "french_name": "Multimédia - Tendances"
+      }
+    ],
+    "Science": [
+      {
+        "name": "Science - Overview",
+        "french_name": "Science - Aperçu"
+      },
+      {
+        "name": "Science - Guides",
+        "french_name": "Science - Guides"
+      },
+      {
+        "name": "Science - Trends",
+        "french_name": "Science - Tendances"
+      }
+    ],
+    "Tech & Innovation": [
+      {
+        "name": "Tech & Innovation - Overview",
+        "french_name": "Tech & Innovation - Aperçu"
+      },
+      {
+        "name": "Tech & Innovation - Guides",
+        "french_name": "Tech & Innovation - Guides"
+      },
+      {
+        "name": "Tech & Innovation - Trends",
+        "french_name": "Tech & Innovation - Tendances"
+      }
+    ],
+    "Culture": [
+      {
+        "name": "Culture - Overview",
+        "french_name": "Culture - Aperçu"
+      },
+      {
+        "name": "Culture - Guides",
+        "french_name": "Culture - Guides"
+      },
+      {
+        "name": "Culture - Trends",
+        "french_name": "Culture - Tendances"
+      }
+    ],
+    "Religion": [
+      {
+        "name": "Religion - Overview",
+        "french_name": "Religion - Aperçu"
+      },
+      {
+        "name": "Religion - Guides",
+        "french_name": "Religion - Guides"
+      },
+      {
+        "name": "Religion - Trends",
+        "french_name": "Religion - Tendances"
+      }
+    ],
+    "Kids": [
+      {
+        "name": "Kids - Overview",
+        "french_name": "Enfants - Aperçu"
+      },
+      {
+        "name": "Kids - Guides",
+        "french_name": "Enfants - Guides"
+      },
+      {
+        "name": "Kids - Trends",
+        "french_name": "Enfants - Tendances"
+      }
+    ],
+    "News": [
+      {
+        "name": "News - Overview",
+        "french_name": "Actualités - Aperçu"
+      },
+      {
+        "name": "News - Guides",
+        "french_name": "Actualités - Guides"
+      },
+      {
+        "name": "News - Trends",
+        "french_name": "Actualités - Tendances"
+      }
+    ],
+    "Employment": [
+      {
+        "name": "Employment - Overview",
+        "french_name": "Emploi - Aperçu"
+      },
+      {
+        "name": "Employment - Guides",
+        "french_name": "Emploi - Guides"
+      },
+      {
+        "name": "Employment - Trends",
+        "french_name": "Emploi - Tendances"
+      }
+    ],
+    "Vehicles": [
+      {
+        "name": "Vehicles - Overview",
+        "french_name": "Véhicules - Aperçu"
+      },
+      {
+        "name": "Vehicles - Guides",
+        "french_name": "Véhicules - Guides"
+      },
+      {
+        "name": "Vehicles - Trends",
+        "french_name": "Véhicules - Tendances"
+      }
+    ],
+    "Tools & Devices": [
+      {
+        "name": "Tools & Devices - Overview",
+        "french_name": "Outils & Appareils - Aperçu"
+      },
+      {
+        "name": "Tools & Devices - Guides",
+        "french_name": "Outils & Appareils - Guides"
+      },
+      {
+        "name": "Tools & Devices - Trends",
+        "french_name": "Outils & Appareils - Tendances"
+      }
+    ],
+    "Travel & Tourism": [
+      {
+        "name": "Travel & Tourism - Overview",
+        "french_name": "Voyage & Tourisme - Aperçu"
+      },
+      {
+        "name": "Travel & Tourism - Guides",
+        "french_name": "Voyage & Tourisme - Guides"
+      },
+      {
+        "name": "Travel & Tourism - Trends",
+        "french_name": "Voyage & Tourisme - Tendances"
+      }
+    ],
+    "Hobbies & Learnings": [
+      {
+        "name": "Hobbies & Learnings - Overview",
+        "french_name": "Passion & Apprentissage - Aperçu"
+      },
+      {
+        "name": "Hobbies & Learnings - Guides",
+        "french_name": "Passion & Apprentissage - Guides"
+      },
+      {
+        "name": "Hobbies & Learnings - Trends",
+        "french_name": "Passion & Apprentissage - Tendances"
+      }
+    ],
+    "Books": [
+      {
+        "name": "Books - Overview",
+        "french_name": "Livres - Aperçu"
+      },
+      {
+        "name": "Books - Guides",
+        "french_name": "Livres - Guides"
+      },
+      {
+        "name": "Books - Trends",
+        "french_name": "Livres - Tendances"
+      }
+    ],
+    "Videos": [
+      {
+        "name": "Videos - Overview",
+        "french_name": "Vidéos - Aperçu"
+      },
+      {
+        "name": "Videos - Guides",
+        "french_name": "Vidéos - Guides"
+      },
+      {
+        "name": "Videos - Trends",
+        "french_name": "Vidéos - Tendances"
+      }
+    ],
+    "Photos": [
+      {
+        "name": "Photos - Overview",
+        "french_name": "Photos - Aperçu"
+      },
+      {
+        "name": "Photos - Guides",
+        "french_name": "Photos - Guides"
+      },
+      {
+        "name": "Photos - Trends",
+        "french_name": "Photos - Tendances"
+      }
+    ],
+    "Social Medias & Networks": [
+      {
+        "name": "Social Medias & Networks - Overview",
+        "french_name": "Réseaux Sociaux - Aperçu"
+      },
+      {
+        "name": "Social Medias & Networks - Guides",
+        "french_name": "Réseaux Sociaux - Guides"
+      },
+      {
+        "name": "Social Medias & Networks - Trends",
+        "french_name": "Réseaux Sociaux - Tendances"
+      }
+    ]
+  },
+  "Video-Mania": {
+    "PV": [
+      {
+        "name": "PV - Overview",
+        "french_name": "PV - Aperçu"
+      },
+      {
+        "name": "PV - Guides",
+        "french_name": "PV - Guides"
+      },
+      {
+        "name": "PV - Trends",
+        "french_name": "PV - Tendances"
+      }
+    ],
+    "09V": [
+      {
+        "name": "09V - Overview",
+        "french_name": "09V - Aperçu"
+      },
+      {
+        "name": "09V - Guides",
+        "french_name": "09V - Guides"
+      },
+      {
+        "name": "09V - Trends",
+        "french_name": "09V - Tendances"
+      }
+    ],
+    "36V": [
+      {
+        "name": "36V - Overview",
+        "french_name": "36V - Aperçu"
+      },
+      {
+        "name": "36V - Guides",
+        "french_name": "36V - Guides"
+      },
+      {
+        "name": "36V - Trends",
+        "french_name": "36V - Tendances"
+      }
+    ],
+    "63V": [
+      {
+        "name": "63V - Overview",
+        "french_name": "63V - Aperçu"
+      },
+      {
+        "name": "63V - Guides",
+        "french_name": "63V - Guides"
+      },
+      {
+        "name": "63V - Trends",
+        "french_name": "63V - Tendances"
+      }
+    ],
+    "90V": [
+      {
+        "name": "90V - Overview",
+        "french_name": "90V - Aperçu"
+      },
+      {
+        "name": "90V - Guides",
+        "french_name": "90V - Guides"
+      },
+      {
+        "name": "90V - Trends",
+        "french_name": "90V - Tendances"
+      }
+    ],
+    "126V": [
+      {
+        "name": "126V - Overview",
+        "french_name": "126V - Aperçu"
+      },
+      {
+        "name": "126V - Guides",
+        "french_name": "126V - Guides"
+      },
+      {
+        "name": "126V - Trends",
+        "french_name": "126V - Tendances"
+      }
+    ],
+    "180V": [
+      {
+        "name": "180V - Overview",
+        "french_name": "180V - Aperçu"
+      },
+      {
+        "name": "180V - Guides",
+        "french_name": "180V - Guides"
+      },
+      {
+        "name": "180V - Trends",
+        "french_name": "180V - Tendances"
+      }
+    ],
+    "216V": [
+      {
+        "name": "216V - Overview",
+        "french_name": "216V - Aperçu"
+      },
+      {
+        "name": "216V - Guides",
+        "french_name": "216V - Guides"
+      },
+      {
+        "name": "216V - Trends",
+        "french_name": "216V - Tendances"
+      }
+    ],
+    "234V": [
+      {
+        "name": "234V - Overview",
+        "french_name": "234V - Aperçu"
+      },
+      {
+        "name": "234V - Guides",
+        "french_name": "234V - Guides"
+      },
+      {
+        "name": "234V - Trends",
+        "french_name": "234V - Tendances"
+      }
+    ],
+    "252V": [
+      {
+        "name": "252V - Overview",
+        "french_name": "252V - Aperçu"
+      },
+      {
+        "name": "252V - Guides",
+        "french_name": "252V - Guides"
+      },
+      {
+        "name": "252V - Trends",
+        "french_name": "252V - Tendances"
+      }
+    ],
+    "306V": [
+      {
+        "name": "306V - Overview",
+        "french_name": "306V - Aperçu"
+      },
+      {
+        "name": "306V - Guides",
+        "french_name": "306V - Guides"
+      },
+      {
+        "name": "306V - Trends",
+        "french_name": "306V - Tendances"
+      }
+    ],
+    "333V": [
+      {
+        "name": "333V - Overview",
+        "french_name": "333V - Aperçu"
+      },
+      {
+        "name": "333V - Guides",
+        "french_name": "333V - Guides"
+      },
+      {
+        "name": "333V - Trends",
+        "french_name": "333V - Tendances"
+      }
+    ],
+    "360V": [
+      {
+        "name": "360V - Overview",
+        "french_name": "360V - Aperçu"
+      },
+      {
+        "name": "360V - Guides",
+        "french_name": "360V - Guides"
+      },
+      {
+        "name": "360V - Trends",
+        "french_name": "360V - Tendances"
+      }
+    ],
+    "405V": [
+      {
+        "name": "405V - Overview",
+        "french_name": "405V - Aperçu"
+      },
+      {
+        "name": "405V - Guides",
+        "french_name": "405V - Guides"
+      },
+      {
+        "name": "405V - Trends",
+        "french_name": "405V - Tendances"
+      }
+    ],
+    "504V": [
+      {
+        "name": "504V - Overview",
+        "french_name": "504V - Aperçu"
+      },
+      {
+        "name": "504V - Guides",
+        "french_name": "504V - Guides"
+      },
+      {
+        "name": "504V - Trends",
+        "french_name": "504V - Tendances"
+      }
+    ],
+    "603V": [
+      {
+        "name": "603V - Overview",
+        "french_name": "603V - Aperçu"
+      },
+      {
+        "name": "603V - Guides",
+        "french_name": "603V - Guides"
+      },
+      {
+        "name": "603V - Trends",
+        "french_name": "603V - Tendances"
+      }
+    ],
+    "702V": [
+      {
+        "name": "702V - Overview",
+        "french_name": "702V - Aperçu"
+      },
+      {
+        "name": "702V - Guides",
+        "french_name": "702V - Guides"
+      },
+      {
+        "name": "702V - Trends",
+        "french_name": "702V - Tendances"
+      }
+    ],
+    "801V": [
+      {
+        "name": "801V - Overview",
+        "french_name": "801V - Aperçu"
+      },
+      {
+        "name": "801V - Guides",
+        "french_name": "801V - Guides"
+      },
+      {
+        "name": "801V - Trends",
+        "french_name": "801V - Tendances"
+      }
+    ],
+    "900V": [
+      {
+        "name": "900V - Overview",
+        "french_name": "900V - Aperçu"
+      },
+      {
+        "name": "900V - Guides",
+        "french_name": "900V - Guides"
+      },
+      {
+        "name": "900V - Trends",
+        "french_name": "900V - Tendances"
+      }
+    ]
+  },
+  "Pic Tours": {
+    "Funny": [
+      {
+        "name": "Funny - Overview",
+        "french_name": "Drôle - Aperçu"
+      },
+      {
+        "name": "Funny - Guides",
+        "french_name": "Drôle - Guides"
+      },
+      {
+        "name": "Funny - Trends",
+        "french_name": "Drôle - Tendances"
+      }
+    ],
+    "People": [
+      {
+        "name": "People - Overview",
+        "french_name": "Personnes - Aperçu"
+      },
+      {
+        "name": "People - Guides",
+        "french_name": "Personnes - Guides"
+      },
+      {
+        "name": "People - Trends",
+        "french_name": "Personnes - Tendances"
+      }
+    ],
+    "Creativity": [
+      {
+        "name": "Creativity - Overview",
+        "french_name": "Créativité - Aperçu"
+      },
+      {
+        "name": "Creativity - Guides",
+        "french_name": "Créativité - Guides"
+      },
+      {
+        "name": "Creativity - Trends",
+        "french_name": "Créativité - Tendances"
+      }
+    ],
+    "Vehicles": [
+      {
+        "name": "Vehicles - Overview",
+        "french_name": "Véhicules - Aperçu"
+      },
+      {
+        "name": "Vehicles - Guides",
+        "french_name": "Véhicules - Guides"
+      },
+      {
+        "name": "Vehicles - Trends",
+        "french_name": "Véhicules - Tendances"
+      }
+    ],
+    "Tools & Devices": [
+      {
+        "name": "Tools & Devices - Overview",
+        "french_name": "Outils & Appareils - Aperçu"
+      },
+      {
+        "name": "Tools & Devices - Guides",
+        "french_name": "Outils & Appareils - Guides"
+      },
+      {
+        "name": "Tools & Devices - Trends",
+        "french_name": "Outils & Appareils - Tendances"
+      }
+    ],
+    "Wedding": [
+      {
+        "name": "Wedding - Overview",
+        "french_name": "Mariage - Aperçu"
+      },
+      {
+        "name": "Wedding - Guides",
+        "french_name": "Mariage - Guides"
+      },
+      {
+        "name": "Wedding - Trends",
+        "french_name": "Mariage - Tendances"
+      }
+    ],
+    "Exotic": [
+      {
+        "name": "Exotic - Overview",
+        "french_name": "Exotique - Aperçu"
+      },
+      {
+        "name": "Exotic - Guides",
+        "french_name": "Exotique - Guides"
+      },
+      {
+        "name": "Exotic - Trends",
+        "french_name": "Exotique - Tendances"
+      }
+    ],
+    "Entertainment": [
+      {
+        "name": "Entertainment - Overview",
+        "french_name": "Divertissement - Aperçu"
+      },
+      {
+        "name": "Entertainment - Guides",
+        "french_name": "Divertissement - Guides"
+      },
+      {
+        "name": "Entertainment - Trends",
+        "french_name": "Divertissement - Tendances"
+      }
+    ],
+    "Celebrities": [
+      {
+        "name": "Celebrities - Overview",
+        "french_name": "Célébrités - Aperçu"
+      },
+      {
+        "name": "Celebrities - Guides",
+        "french_name": "Célébrités - Guides"
+      },
+      {
+        "name": "Celebrities - Trends",
+        "french_name": "Célébrités - Tendances"
+      }
+    ],
+    "Animals": [
+      {
+        "name": "Animals - Overview",
+        "french_name": "Animaux - Aperçu"
+      },
+      {
+        "name": "Animals - Guides",
+        "french_name": "Animaux - Guides"
+      },
+      {
+        "name": "Animals - Trends",
+        "french_name": "Animaux - Tendances"
+      }
+    ],
+    "Technology": [
+      {
+        "name": "Technology - Overview",
+        "french_name": "Technologie - Aperçu"
+      },
+      {
+        "name": "Technology - Guides",
+        "french_name": "Technologie - Guides"
+      },
+      {
+        "name": "Technology - Trends",
+        "french_name": "Technologie - Tendances"
+      }
+    ],
+    "Memories": [
+      {
+        "name": "Memories - Overview",
+        "french_name": "Souvenirs - Aperçu"
+      },
+      {
+        "name": "Memories - Guides",
+        "french_name": "Souvenirs - Guides"
+      },
+      {
+        "name": "Memories - Trends",
+        "french_name": "Souvenirs - Tendances"
+      }
+    ],
+    "Beauty & Fashion": [
+      {
+        "name": "Beauty & Fashion - Overview",
+        "french_name": "Beauté & Mode - Aperçu"
+      },
+      {
+        "name": "Beauty & Fashion - Guides",
+        "french_name": "Beauté & Mode - Guides"
+      },
+      {
+        "name": "Beauty & Fashion - Trends",
+        "french_name": "Beauté & Mode - Tendances"
+      }
+    ],
+    "Art": [
+      {
+        "name": "Art - Overview",
+        "french_name": "Art - Aperçu"
+      },
+      {
+        "name": "Art - Guides",
+        "french_name": "Art - Guides"
+      },
+      {
+        "name": "Art - Trends",
+        "french_name": "Art - Tendances"
+      }
+    ],
+    "Travel & Tourism": [
+      {
+        "name": "Travel & Tourism - Overview",
+        "french_name": "Voyage & Tourisme - Aperçu"
+      },
+      {
+        "name": "Travel & Tourism - Guides",
+        "french_name": "Voyage & Tourisme - Guides"
+      },
+      {
+        "name": "Travel & Tourism - Trends",
+        "french_name": "Voyage & Tourisme - Tendances"
+      }
+    ],
+    "Nature": [
+      {
+        "name": "Nature - Overview",
+        "french_name": "Nature - Aperçu"
+      },
+      {
+        "name": "Nature - Guides",
+        "french_name": "Nature - Guides"
+      },
+      {
+        "name": "Nature - Trends",
+        "french_name": "Nature - Tendances"
+      }
+    ],
+    "Science": [
+      {
+        "name": "Science - Overview",
+        "french_name": "Science - Aperçu"
+      },
+      {
+        "name": "Science - Guides",
+        "french_name": "Science - Guides"
+      },
+      {
+        "name": "Science - Trends",
+        "french_name": "Science - Tendances"
+      }
+    ],
+    "Food": [
+      {
+        "name": "Food - Overview",
+        "french_name": "Alimentation - Aperçu"
+      },
+      {
+        "name": "Food - Guides",
+        "french_name": "Alimentation - Guides"
+      },
+      {
+        "name": "Food - Trends",
+        "french_name": "Alimentation - Tendances"
+      }
+    ],
+    "Sports": [
+      {
+        "name": "Sports - Overview",
+        "french_name": "Sports - Aperçu"
+      },
+      {
+        "name": "Sports - Guides",
+        "french_name": "Sports - Guides"
+      },
+      {
+        "name": "Sports - Trends",
+        "french_name": "Sports - Tendances"
+      }
+    ]
+  },
+  "On-News": {
+    "News": [
+      {
+        "name": "News - Overview",
+        "french_name": "News - Aperçu"
+      },
+      {
+        "name": "News - Guides",
+        "french_name": "News - Guides"
+      },
+      {
+        "name": "News - Trends",
+        "french_name": "News - Tendances"
+      }
+    ],
+    "Politics": [
+      {
+        "name": "Politics - Overview",
+        "french_name": "Politics - Aperçu"
+      },
+      {
+        "name": "Politics - Guides",
+        "french_name": "Politics - Guides"
+      },
+      {
+        "name": "Politics - Trends",
+        "french_name": "Politics - Tendances"
+      }
+    ],
+    "Business": [
+      {
+        "name": "Business - Overview",
+        "french_name": "Business - Aperçu"
+      },
+      {
+        "name": "Business - Guides",
+        "french_name": "Business - Guides"
+      },
+      {
+        "name": "Business - Trends",
+        "french_name": "Business - Tendances"
+      }
+    ],
+    "Art": [
+      {
+        "name": "Art - Overview",
+        "french_name": "Art - Aperçu"
+      },
+      {
+        "name": "Art - Guides",
+        "french_name": "Art - Guides"
+      },
+      {
+        "name": "Art - Trends",
+        "french_name": "Art - Tendances"
+      }
+    ],
+    "Tech & Innovation": [
+      {
+        "name": "Tech & Innovation - Overview",
+        "french_name": "Tech & Innovation - Aperçu"
+      },
+      {
+        "name": "Tech & Innovation - Guides",
+        "french_name": "Tech & Innovation - Guides"
+      },
+      {
+        "name": "Tech & Innovation - Trends",
+        "french_name": "Tech & Innovation - Tendances"
+      }
+    ],
+    "Culture": [
+      {
+        "name": "Culture - Overview",
+        "french_name": "Culture - Aperçu"
+      },
+      {
+        "name": "Culture - Guides",
+        "french_name": "Culture - Guides"
+      },
+      {
+        "name": "Culture - Trends",
+        "french_name": "Culture - Tendances"
+      }
+    ],
+    "Religion": [
+      {
+        "name": "Religion - Overview",
+        "french_name": "Religion - Aperçu"
+      },
+      {
+        "name": "Religion - Guides",
+        "french_name": "Religion - Guides"
+      },
+      {
+        "name": "Religion - Trends",
+        "french_name": "Religion - Tendances"
+      }
+    ],
+    "Trending": [
+      {
+        "name": "Trending - Overview",
+        "french_name": "Trending - Aperçu"
+      },
+      {
+        "name": "Trending - Guides",
+        "french_name": "Trending - Guides"
+      },
+      {
+        "name": "Trending - Trends",
+        "french_name": "Trending - Tendances"
+      }
+    ],
+    "Lifestyle": [
+      {
+        "name": "Lifestyle - Overview",
+        "french_name": "Lifestyle - Aperçu"
+      },
+      {
+        "name": "Lifestyle - Guides",
+        "french_name": "Lifestyle - Guides"
+      },
+      {
+        "name": "Lifestyle - Trends",
+        "french_name": "Lifestyle - Tendances"
+      }
+    ],
+    "Entertainment": [
+      {
+        "name": "Entertainment - Overview",
+        "french_name": "Entertainment - Aperçu"
+      },
+      {
+        "name": "Entertainment - Guides",
+        "french_name": "Entertainment - Guides"
+      },
+      {
+        "name": "Entertainment - Trends",
+        "french_name": "Entertainment - Tendances"
+      }
+    ],
+    "Education": [
+      {
+        "name": "Education - Overview",
+        "french_name": "Education - Aperçu"
+      },
+      {
+        "name": "Education - Guides",
+        "french_name": "Education - Guides"
+      },
+      {
+        "name": "Education - Trends",
+        "french_name": "Education - Tendances"
+      }
+    ],
+    "Sports": [
+      {
+        "name": "Sports - Overview",
+        "french_name": "Sports - Aperçu"
+      },
+      {
+        "name": "Sports - Guides",
+        "french_name": "Sports - Guides"
+      },
+      {
+        "name": "Sports - Trends",
+        "french_name": "Sports - Tendances"
+      }
+    ],
+    "Finance": [
+      {
+        "name": "Finance - Overview",
+        "french_name": "Finance - Aperçu"
+      },
+      {
+        "name": "Finance - Guides",
+        "french_name": "Finance - Guides"
+      },
+      {
+        "name": "Finance - Trends",
+        "french_name": "Finance - Tendances"
+      }
+    ],
+    "Fitness & Health": [
+      {
+        "name": "Fitness & Health - Overview",
+        "french_name": "Fitness & Health - Aperçu"
+      },
+      {
+        "name": "Fitness & Health - Guides",
+        "french_name": "Fitness & Health - Guides"
+      },
+      {
+        "name": "Fitness & Health - Trends",
+        "french_name": "Fitness & Health - Tendances"
+      }
+    ],
+    "Beauty & Fashion": [
+      {
+        "name": "Beauty & Fashion - Overview",
+        "french_name": "Beauty & Fashion - Aperçu"
+      },
+      {
+        "name": "Beauty & Fashion - Guides",
+        "french_name": "Beauty & Fashion - Guides"
+      },
+      {
+        "name": "Beauty & Fashion - Trends",
+        "french_name": "Beauty & Fashion - Tendances"
+      }
+    ],
+    "Productivity": [
+      {
+        "name": "Productivity - Overview",
+        "french_name": "Productivity - Aperçu"
+      },
+      {
+        "name": "Productivity - Guides",
+        "french_name": "Productivity - Guides"
+      },
+      {
+        "name": "Productivity - Trends",
+        "french_name": "Productivity - Tendances"
+      }
+    ],
+    "Books": [
+      {
+        "name": "Books - Overview",
+        "french_name": "Books - Aperçu"
+      },
+      {
+        "name": "Books - Guides",
+        "french_name": "Books - Guides"
+      },
+      {
+        "name": "Books - Trends",
+        "french_name": "Books - Tendances"
+      }
+    ],
+    "Travel & Tourism": [
+      {
+        "name": "Travel & Tourism - Overview",
+        "french_name": "Travel & Tourism - Aperçu"
+      },
+      {
+        "name": "Travel & Tourism - Guides",
+        "french_name": "Travel & Tourism - Guides"
+      },
+      {
+        "name": "Travel & Tourism - Trends",
+        "french_name": "Travel & Tourism - Tendances"
+      }
+    ],
+    "Multimedia": [
+      {
+        "name": "Multimedia - Overview",
+        "french_name": "Multimedia - Aperçu"
+      },
+      {
+        "name": "Multimedia - Guides",
+        "french_name": "Multimedia - Guides"
+      },
+      {
+        "name": "Multimedia - Trends",
+        "french_name": "Multimedia - Tendances"
+      }
+    ]
+  },
+  "Open-Letters": {
+    "Politics": [
+      {
+        "name": "Politics - Overview",
+        "french_name": "Politique - Aperçu"
+      },
+      {
+        "name": "Politics - Guides",
+        "french_name": "Politique - Guides"
+      },
+      {
+        "name": "Politics - Trends",
+        "french_name": "Politique - Tendances"
+      }
+    ],
+    "Government": [
+      {
+        "name": "Government - Overview",
+        "french_name": "Gouvernement - Aperçu"
+      },
+      {
+        "name": "Government - Guides",
+        "french_name": "Gouvernement - Guides"
+      },
+      {
+        "name": "Government - Trends",
+        "french_name": "Gouvernement - Tendances"
+      }
+    ],
+    "Business & Finance": [
+      {
+        "name": "Business & Finance - Overview",
+        "french_name": "Affaires & Finance - Aperçu"
+      },
+      {
+        "name": "Business & Finance - Guides",
+        "french_name": "Affaires & Finance - Guides"
+      },
+      {
+        "name": "Business & Finance - Trends",
+        "french_name": "Affaires & Finance - Tendances"
+      }
+    ],
+    "Education": [
+      {
+        "name": "Education - Overview",
+        "french_name": "Éducation - Aperçu"
+      },
+      {
+        "name": "Education - Guides",
+        "french_name": "Éducation - Guides"
+      },
+      {
+        "name": "Education - Trends",
+        "french_name": "Éducation - Tendances"
+      }
+    ],
+    "War & Security": [
+      {
+        "name": "War & Security - Overview",
+        "french_name": "Guerre & Sécurité - Aperçu"
+      },
+      {
+        "name": "War & Security - Guides",
+        "french_name": "Guerre & Sécurité - Guides"
+      },
+      {
+        "name": "War & Security - Trends",
+        "french_name": "Guerre & Sécurité - Tendances"
+      }
+    ],
+    "Science & Innovation": [
+      {
+        "name": "Science & Innovation - Overview",
+        "french_name": "Science & Innovation - Aperçu"
+      },
+      {
+        "name": "Science & Innovation - Guides",
+        "french_name": "Science & Innovation - Guides"
+      },
+      {
+        "name": "Science & Innovation - Trends",
+        "french_name": "Science & Innovation - Tendances"
+      }
+    ],
+    "Art & Culture": [
+      {
+        "name": "Art & Culture - Overview",
+        "french_name": "Art & Culture - Aperçu"
+      },
+      {
+        "name": "Art & Culture - Guides",
+        "french_name": "Art & Culture - Guides"
+      },
+      {
+        "name": "Art & Culture - Trends",
+        "french_name": "Art & Culture - Tendances"
+      }
+    ],
+    "Beauty & Fashion": [
+      {
+        "name": "Beauty & Fashion - Overview",
+        "french_name": "Beauté & Mode - Aperçu"
+      },
+      {
+        "name": "Beauty & Fashion - Guides",
+        "french_name": "Beauté & Mode - Guides"
+      },
+      {
+        "name": "Beauty & Fashion - Trends",
+        "french_name": "Beauté & Mode - Tendances"
+      }
+    ],
+    "Infrastructure Development": [
+      {
+        "name": "Infrastructure Development - Overview",
+        "french_name": "Développement des Infrastructures - Aperçu"
+      },
+      {
+        "name": "Infrastructure Development - Guides",
+        "french_name": "Développement des Infrastructures - Guides"
+      },
+      {
+        "name": "Infrastructure Development - Trends",
+        "french_name": "Développement des Infrastructures - Tendances"
+      }
+    ],
+    "Multimedia": [
+      {
+        "name": "Multimedia - Overview",
+        "french_name": "Multimédia - Aperçu"
+      },
+      {
+        "name": "Multimedia - Guides",
+        "french_name": "Multimédia - Guides"
+      },
+      {
+        "name": "Multimedia - Trends",
+        "french_name": "Multimédia - Tendances"
+      }
+    ],
+    "Entertainment": [
+      {
+        "name": "Entertainment - Overview",
+        "french_name": "Divertissement - Aperçu"
+      },
+      {
+        "name": "Entertainment - Guides",
+        "french_name": "Divertissement - Guides"
+      },
+      {
+        "name": "Entertainment - Trends",
+        "french_name": "Divertissement - Tendances"
+      }
+    ],
+    "Student": [
+      {
+        "name": "Student - Overview",
+        "french_name": "Étudiant - Aperçu"
+      },
+      {
+        "name": "Student - Guides",
+        "french_name": "Étudiant - Guides"
+      },
+      {
+        "name": "Student - Trends",
+        "french_name": "Étudiant - Tendances"
+      }
+    ],
+    "Social Welfare": [
+      {
+        "name": "Social Welfare - Overview",
+        "french_name": "Aide Sociale - Aperçu"
+      },
+      {
+        "name": "Social Welfare - Guides",
+        "french_name": "Aide Sociale - Guides"
+      },
+      {
+        "name": "Social Welfare - Trends",
+        "french_name": "Aide Sociale - Tendances"
+      }
+    ],
+    "Project Management": [
+      {
+        "name": "Project Management - Overview",
+        "french_name": "Gestion de Projet - Aperçu"
+      },
+      {
+        "name": "Project Management - Guides",
+        "french_name": "Gestion de Projet - Guides"
+      },
+      {
+        "name": "Project Management - Trends",
+        "french_name": "Gestion de Projet - Tendances"
+      }
+    ],
+    "Women Empowerment": [
+      {
+        "name": "Women Empowerment - Overview",
+        "french_name": "Autonomisation des Femmes - Aperçu"
+      },
+      {
+        "name": "Women Empowerment - Guides",
+        "french_name": "Autonomisation des Femmes - Guides"
+      },
+      {
+        "name": "Women Empowerment - Trends",
+        "french_name": "Autonomisation des Femmes - Tendances"
+      }
+    ],
+    "Finance & Health": [
+      {
+        "name": "Finance & Health - Overview",
+        "french_name": "Finance & Santé - Aperçu"
+      },
+      {
+        "name": "Finance & Health - Guides",
+        "french_name": "Finance & Santé - Guides"
+      },
+      {
+        "name": "Finance & Health - Trends",
+        "french_name": "Finance & Santé - Tendances"
+      }
+    ],
+    "Religion": [
+      {
+        "name": "Religion - Overview",
+        "french_name": "Religion - Aperçu"
+      },
+      {
+        "name": "Religion - Guides",
+        "french_name": "Religion - Guides"
+      },
+      {
+        "name": "Religion - Trends",
+        "french_name": "Religion - Tendances"
+      }
+    ],
+    "Energy": [
+      {
+        "name": "Energy - Overview",
+        "french_name": "Énergie - Aperçu"
+      },
+      {
+        "name": "Energy - Guides",
+        "french_name": "Énergie - Guides"
+      },
+      {
+        "name": "Energy - Trends",
+        "french_name": "Énergie - Tendances"
+      }
+    ],
+    "Water": [
+      {
+        "name": "Water - Overview",
+        "french_name": "Eau - Aperçu"
+      },
+      {
+        "name": "Water - Guides",
+        "french_name": "Eau - Guides"
+      },
+      {
+        "name": "Water - Trends",
+        "french_name": "Eau - Tendances"
+      }
+    ],
+    "Culture": [
+      {
+        "name": "Culture - Overview",
+        "french_name": "Culture - Aperçu"
+      },
+      {
+        "name": "Culture - Guides",
+        "french_name": "Culture - Guides"
+      },
+      {
+        "name": "Culture - Trends",
+        "french_name": "Culture - Tendances"
+      }
+    ],
+    "Immigration": [
+      {
+        "name": "Immigration - Overview",
+        "french_name": "Immigration - Aperçu"
+      },
+      {
+        "name": "Immigration - Guides",
+        "french_name": "Immigration - Guides"
+      },
+      {
+        "name": "Immigration - Trends",
+        "french_name": "Immigration - Tendances"
+      }
+    ]
+  },
+  "Q & A": {
+    "Politics": [
+      {
+        "name": "Politics - Overview",
+        "french_name": "Politics - Aperçu"
+      },
+      {
+        "name": "Politics - Guides",
+        "french_name": "Politics - Guides"
+      },
+      {
+        "name": "Politics - Trends",
+        "french_name": "Politics - Tendances"
+      }
+    ],
+    "Business": [
+      {
+        "name": "Business - Overview",
+        "french_name": "Business - Aperçu"
+      },
+      {
+        "name": "Business - Guides",
+        "french_name": "Business - Guides"
+      },
+      {
+        "name": "Business - Trends",
+        "french_name": "Business - Tendances"
+      }
+    ],
+    "Lifestyle": [
+      {
+        "name": "Lifestyle - Overview",
+        "french_name": "Lifestyle - Aperçu"
+      },
+      {
+        "name": "Lifestyle - Guides",
+        "french_name": "Lifestyle - Guides"
+      },
+      {
+        "name": "Lifestyle - Trends",
+        "french_name": "Lifestyle - Tendances"
+      }
+    ],
+    "Entertainment": [
+      {
+        "name": "Entertainment - Overview",
+        "french_name": "Entertainment - Aperçu"
+      },
+      {
+        "name": "Entertainment - Guides",
+        "french_name": "Entertainment - Guides"
+      },
+      {
+        "name": "Entertainment - Trends",
+        "french_name": "Entertainment - Tendances"
+      }
+    ],
+    "Education": [
+      {
+        "name": "Education - Overview",
+        "french_name": "Education - Aperçu"
+      },
+      {
+        "name": "Education - Guides",
+        "french_name": "Education - Guides"
+      },
+      {
+        "name": "Education - Trends",
+        "french_name": "Education - Tendances"
+      }
+    ],
+    "Sports": [
+      {
+        "name": "Sports - Overview",
+        "french_name": "Sports - Aperçu"
+      },
+      {
+        "name": "Sports - Guides",
+        "french_name": "Sports - Guides"
+      },
+      {
+        "name": "Sports - Trends",
+        "french_name": "Sports - Tendances"
+      }
+    ],
+    "Finance": [
+      {
+        "name": "Finance - Overview",
+        "french_name": "Finance - Aperçu"
+      },
+      {
+        "name": "Finance - Guides",
+        "french_name": "Finance - Guides"
+      },
+      {
+        "name": "Finance - Trends",
+        "french_name": "Finance - Tendances"
+      }
+    ],
+    "Fitness & Health": [
+      {
+        "name": "Fitness & Health - Overview",
+        "french_name": "Fitness & Health - Aperçu"
+      },
+      {
+        "name": "Fitness & Health - Guides",
+        "french_name": "Fitness & Health - Guides"
+      },
+      {
+        "name": "Fitness & Health - Trends",
+        "french_name": "Fitness & Health - Tendances"
+      }
+    ],
+    "Beauty & Fashion": [
+      {
+        "name": "Beauty & Fashion - Overview",
+        "french_name": "Beauty & Fashion - Aperçu"
+      },
+      {
+        "name": "Beauty & Fashion - Guides",
+        "french_name": "Beauty & Fashion - Guides"
+      },
+      {
+        "name": "Beauty & Fashion - Trends",
+        "french_name": "Beauty & Fashion - Tendances"
+      }
+    ],
+    "Art": [
+      {
+        "name": "Art - Overview",
+        "french_name": "Art - Aperçu"
+      },
+      {
+        "name": "Art - Guides",
+        "french_name": "Art - Guides"
+      },
+      {
+        "name": "Art - Trends",
+        "french_name": "Art - Tendances"
+      }
+    ],
+    "Travel & Tourism": [
+      {
+        "name": "Travel & Tourism - Overview",
+        "french_name": "Travel & Tourism - Aperçu"
+      },
+      {
+        "name": "Travel & Tourism - Guides",
+        "french_name": "Travel & Tourism - Guides"
+      },
+      {
+        "name": "Travel & Tourism - Trends",
+        "french_name": "Travel & Tourism - Tendances"
+      }
+    ],
+    "Gaming": [
+      {
+        "name": "Gaming - Overview",
+        "french_name": "Gaming - Aperçu"
+      },
+      {
+        "name": "Gaming - Guides",
+        "french_name": "Gaming - Guides"
+      },
+      {
+        "name": "Gaming - Trends",
+        "french_name": "Gaming - Tendances"
+      }
+    ],
+    "Multimedia": [
+      {
+        "name": "Multimedia - Overview",
+        "french_name": "Multimedia - Aperçu"
+      },
+      {
+        "name": "Multimedia - Guides",
+        "french_name": "Multimedia - Guides"
+      },
+      {
+        "name": "Multimedia - Trends",
+        "french_name": "Multimedia - Tendances"
+      }
+    ],
+    "Science": [
+      {
+        "name": "Science - Overview",
+        "french_name": "Science - Aperçu"
+      },
+      {
+        "name": "Science - Guides",
+        "french_name": "Science - Guides"
+      },
+      {
+        "name": "Science - Trends",
+        "french_name": "Science - Tendances"
+      }
+    ],
+    "Tech & Innovation": [
+      {
+        "name": "Tech & Innovation - Overview",
+        "french_name": "Tech & Innovation - Aperçu"
+      },
+      {
+        "name": "Tech & Innovation - Guides",
+        "french_name": "Tech & Innovation - Guides"
+      },
+      {
+        "name": "Tech & Innovation - Trends",
+        "french_name": "Tech & Innovation - Tendances"
+      }
+    ],
+    "Culture": [
+      {
+        "name": "Culture - Overview",
+        "french_name": "Culture - Aperçu"
+      },
+      {
+        "name": "Culture - Guides",
+        "french_name": "Culture - Guides"
+      },
+      {
+        "name": "Culture - Trends",
+        "french_name": "Culture - Tendances"
+      }
+    ],
+    "Religion": [
+      {
+        "name": "Religion - Overview",
+        "french_name": "Religion - Aperçu"
+      },
+      {
+        "name": "Religion - Guides",
+        "french_name": "Religion - Guides"
+      },
+      {
+        "name": "Religion - Trends",
+        "french_name": "Religion - Tendances"
+      }
+    ]
+  },
+  "CVE": {
+    "Frequently Used": [
+      {
+        "name": "Frequently Used - Overview",
+        "french_name": "Frequently Used - Aperçu"
+      },
+      {
+        "name": "Frequently Used - Guides",
+        "french_name": "Frequently Used - Guides"
+      },
+      {
+        "name": "Frequently Used - Trends",
+        "french_name": "Frequently Used - Tendances"
+      }
+    ],
+    "Smiley & Emoticon": [
+      {
+        "name": "Smiley & Emoticon - Overview",
+        "french_name": "Smiley & Emoticon - Aperçu"
+      },
+      {
+        "name": "Smiley & Emoticon - Guides",
+        "french_name": "Smiley & Emoticon - Guides"
+      },
+      {
+        "name": "Smiley & Emoticon - Trends",
+        "french_name": "Smiley & Emoticon - Tendances"
+      }
+    ],
+    "People & Body": [
+      {
+        "name": "People & Body - Overview",
+        "french_name": "People & Body - Aperçu"
+      },
+      {
+        "name": "People & Body - Guides",
+        "french_name": "People & Body - Guides"
+      },
+      {
+        "name": "People & Body - Trends",
+        "french_name": "People & Body - Tendances"
+      }
+    ],
+    "Animals & Nature": [
+      {
+        "name": "Animals & Nature - Overview",
+        "french_name": "Animals & Nature - Aperçu"
+      },
+      {
+        "name": "Animals & Nature - Guides",
+        "french_name": "Animals & Nature - Guides"
+      },
+      {
+        "name": "Animals & Nature - Trends",
+        "french_name": "Animals & Nature - Tendances"
+      }
+    ],
+    "Food & Drink": [
+      {
+        "name": "Food & Drink - Overview",
+        "french_name": "Food & Drink - Aperçu"
+      },
+      {
+        "name": "Food & Drink - Guides",
+        "french_name": "Food & Drink - Guides"
+      },
+      {
+        "name": "Food & Drink - Trends",
+        "french_name": "Food & Drink - Tendances"
+      }
+    ],
+    "Travels & Places": [
+      {
+        "name": "Travels & Places - Overview",
+        "french_name": "Travels & Places - Aperçu"
+      },
+      {
+        "name": "Travels & Places - Guides",
+        "french_name": "Travels & Places - Guides"
+      },
+      {
+        "name": "Travels & Places - Trends",
+        "french_name": "Travels & Places - Tendances"
+      }
+    ],
+    "Objects": [
+      {
+        "name": "Objects - Overview",
+        "french_name": "Objects - Aperçu"
+      },
+      {
+        "name": "Objects - Guides",
+        "french_name": "Objects - Guides"
+      },
+      {
+        "name": "Objects - Trends",
+        "french_name": "Objects - Tendances"
+      }
+    ],
+    "Symbols": [
+      {
+        "name": "Symbols - Overview",
+        "french_name": "Symbols - Aperçu"
+      },
+      {
+        "name": "Symbols - Guides",
+        "french_name": "Symbols - Guides"
+      },
+      {
+        "name": "Symbols - Trends",
+        "french_name": "Symbols - Tendances"
+      }
+    ],
+    "Flags": [
+      {
+        "name": "Flags - Overview",
+        "french_name": "Flags - Aperçu"
+      },
+      {
+        "name": "Flags - Guides",
+        "french_name": "Flags - Guides"
+      },
+      {
+        "name": "Flags - Trends",
+        "french_name": "Flags - Tendances"
+      }
+    ]
+  },
+  "Sports & Sports": {
+    "Football": [
+      {
+        "name": "Football - Overview",
+        "french_name": "Football - Aperçu"
+      },
+      {
+        "name": "Football - Guides",
+        "french_name": "Football - Guides"
+      },
+      {
+        "name": "Football - Trends",
+        "french_name": "Football - Tendances"
+      }
+    ],
+    "Basketball": [
+      {
+        "name": "Basketball - Overview",
+        "french_name": "Basket-ball - Aperçu"
+      },
+      {
+        "name": "Basketball - Guides",
+        "french_name": "Basket-ball - Guides"
+      },
+      {
+        "name": "Basketball - Trends",
+        "french_name": "Basket-ball - Tendances"
+      }
+    ],
+    "Hockey": [
+      {
+        "name": "Hockey - Overview",
+        "french_name": "Hockey - Aperçu"
+      },
+      {
+        "name": "Hockey - Guides",
+        "french_name": "Hockey - Guides"
+      },
+      {
+        "name": "Hockey - Trends",
+        "french_name": "Hockey - Tendances"
+      }
+    ],
+    "Volleyball": [
+      {
+        "name": "Volleyball - Overview",
+        "french_name": "Volley-ball - Aperçu"
+      },
+      {
+        "name": "Volleyball - Guides",
+        "french_name": "Volley-ball - Guides"
+      },
+      {
+        "name": "Volleyball - Trends",
+        "french_name": "Volley-ball - Tendances"
+      }
+    ],
+    "Tennis": [
+      {
+        "name": "Tennis - Overview",
+        "french_name": "Tennis - Aperçu"
+      },
+      {
+        "name": "Tennis - Guides",
+        "french_name": "Tennis - Guides"
+      },
+      {
+        "name": "Tennis - Trends",
+        "french_name": "Tennis - Tendances"
+      }
+    ],
+    "Boxing": [
+      {
+        "name": "Boxing - Overview",
+        "french_name": "Boxe - Aperçu"
+      },
+      {
+        "name": "Boxing - Guides",
+        "french_name": "Boxe - Guides"
+      },
+      {
+        "name": "Boxing - Trends",
+        "french_name": "Boxe - Tendances"
+      }
+    ],
+    "Wrestling": [
+      {
+        "name": "Wrestling - Overview",
+        "french_name": "Lutte - Aperçu"
+      },
+      {
+        "name": "Wrestling - Guides",
+        "french_name": "Lutte - Guides"
+      },
+      {
+        "name": "Wrestling - Trends",
+        "french_name": "Lutte - Tendances"
+      }
+    ],
+    "Judo": [
+      {
+        "name": "Judo - Overview",
+        "french_name": "Judo - Aperçu"
+      },
+      {
+        "name": "Judo - Guides",
+        "french_name": "Judo - Guides"
+      },
+      {
+        "name": "Judo - Trends",
+        "french_name": "Judo - Tendances"
+      }
+    ],
+    "Karate": [
+      {
+        "name": "Karate - Overview",
+        "french_name": "Karaté - Aperçu"
+      },
+      {
+        "name": "Karate - Guides",
+        "french_name": "Karaté - Guides"
+      },
+      {
+        "name": "Karate - Trends",
+        "french_name": "Karaté - Tendances"
+      }
+    ],
+    "Swimming": [
+      {
+        "name": "Swimming - Overview",
+        "french_name": "Natation - Aperçu"
+      },
+      {
+        "name": "Swimming - Guides",
+        "french_name": "Natation - Guides"
+      },
+      {
+        "name": "Swimming - Trends",
+        "french_name": "Natation - Tendances"
+      }
+    ],
+    "Snowboarding": [
+      {
+        "name": "Snowboarding - Overview",
+        "french_name": "Snowboard - Aperçu"
+      },
+      {
+        "name": "Snowboarding - Guides",
+        "french_name": "Snowboard - Guides"
+      },
+      {
+        "name": "Snowboarding - Trends",
+        "french_name": "Snowboard - Tendances"
+      }
+    ],
+    "Surfing": [
+      {
+        "name": "Surfing - Overview",
+        "french_name": "Surf - Aperçu"
+      },
+      {
+        "name": "Surfing - Guides",
+        "french_name": "Surf - Guides"
+      },
+      {
+        "name": "Surfing - Trends",
+        "french_name": "Surf - Tendances"
+      }
+    ],
+    "Car Racing": [
+      {
+        "name": "Car Racing - Overview",
+        "french_name": "Course Automobile - Aperçu"
+      },
+      {
+        "name": "Car Racing - Guides",
+        "french_name": "Course Automobile - Guides"
+      },
+      {
+        "name": "Car Racing - Trends",
+        "french_name": "Course Automobile - Tendances"
+      }
+    ],
+    "Road Cycling": [
+      {
+        "name": "Road Cycling - Overview",
+        "french_name": "Cyclisme sur Route - Aperçu"
+      },
+      {
+        "name": "Road Cycling - Guides",
+        "french_name": "Cyclisme sur Route - Guides"
+      },
+      {
+        "name": "Road Cycling - Trends",
+        "french_name": "Cyclisme sur Route - Tendances"
+      }
+    ],
+    "Equestrian": [
+      {
+        "name": "Equestrian - Overview",
+        "french_name": "Équitation - Aperçu"
+      },
+      {
+        "name": "Equestrian - Guides",
+        "french_name": "Équitation - Guides"
+      },
+      {
+        "name": "Equestrian - Trends",
+        "french_name": "Équitation - Tendances"
+      }
+    ],
+    "Skiing": [
+      {
+        "name": "Skiing - Overview",
+        "french_name": "Ski - Aperçu"
+      },
+      {
+        "name": "Skiing - Guides",
+        "french_name": "Ski - Guides"
+      },
+      {
+        "name": "Skiing - Trends",
+        "french_name": "Ski - Tendances"
+      }
+    ],
+    "Motorcycle Racing": [
+      {
+        "name": "Motorcycle Racing - Overview",
+        "french_name": "Course Moto - Aperçu"
+      },
+      {
+        "name": "Motorcycle Racing - Guides",
+        "french_name": "Course Moto - Guides"
+      },
+      {
+        "name": "Motorcycle Racing - Trends",
+        "french_name": "Course Moto - Tendances"
+      }
+    ],
+    "Track & Field": [
+      {
+        "name": "Track & Field - Overview",
+        "french_name": "Athlétisme - Aperçu"
+      },
+      {
+        "name": "Track & Field - Guides",
+        "french_name": "Athlétisme - Guides"
+      },
+      {
+        "name": "Track & Field - Trends",
+        "french_name": "Athlétisme - Tendances"
+      }
+    ],
+    "Skateboarding": [
+      {
+        "name": "Skateboarding - Overview",
+        "french_name": "Skateboard - Aperçu"
+      },
+      {
+        "name": "Skateboarding - Guides",
+        "french_name": "Skateboard - Guides"
+      },
+      {
+        "name": "Skateboarding - Trends",
+        "french_name": "Skateboard - Tendances"
+      }
+    ]
+  },
+  "Cinematic": {
+    "Detective": [
+      {
+        "name": "Detective - Overview",
+        "french_name": "Détective - Aperçu"
+      },
+      {
+        "name": "Detective - Guides",
+        "french_name": "Détective - Guides"
+      },
+      {
+        "name": "Detective - Trends",
+        "french_name": "Détective - Tendances"
+      }
+    ],
+    "Comedy": [
+      {
+        "name": "Comedy - Overview",
+        "french_name": "Comédie - Aperçu"
+      },
+      {
+        "name": "Comedy - Guides",
+        "french_name": "Comédie - Guides"
+      },
+      {
+        "name": "Comedy - Trends",
+        "french_name": "Comédie - Tendances"
+      }
+    ],
+    "Thriller": [
+      {
+        "name": "Thriller - Overview",
+        "french_name": "Thriller - Aperçu"
+      },
+      {
+        "name": "Thriller - Guides",
+        "french_name": "Thriller - Guides"
+      },
+      {
+        "name": "Thriller - Trends",
+        "french_name": "Thriller - Tendances"
+      }
+    ],
+    "Crime": [
+      {
+        "name": "Crime - Overview",
+        "french_name": "Crime - Aperçu"
+      },
+      {
+        "name": "Crime - Guides",
+        "french_name": "Crime - Guides"
+      },
+      {
+        "name": "Crime - Trends",
+        "french_name": "Crime - Tendances"
+      }
+    ],
+    "Romance": [
+      {
+        "name": "Romance - Overview",
+        "french_name": "Romance - Aperçu"
+      },
+      {
+        "name": "Romance - Guides",
+        "french_name": "Romance - Guides"
+      },
+      {
+        "name": "Romance - Trends",
+        "french_name": "Romance - Tendances"
+      }
+    ],
+    "Action": [
+      {
+        "name": "Action - Overview",
+        "french_name": "Action - Aperçu"
+      },
+      {
+        "name": "Action - Guides",
+        "french_name": "Action - Guides"
+      },
+      {
+        "name": "Action - Trends",
+        "french_name": "Action - Tendances"
+      }
+    ],
+    "Drama": [
+      {
+        "name": "Drama - Overview",
+        "french_name": "Drame - Aperçu"
+      },
+      {
+        "name": "Drama - Guides",
+        "french_name": "Drame - Guides"
+      },
+      {
+        "name": "Drama - Trends",
+        "french_name": "Drame - Tendances"
+      }
+    ],
+    "Horror": [
+      {
+        "name": "Horror - Overview",
+        "french_name": "Horreur - Aperçu"
+      },
+      {
+        "name": "Horror - Guides",
+        "french_name": "Horreur - Guides"
+      },
+      {
+        "name": "Horror - Trends",
+        "french_name": "Horreur - Tendances"
+      }
+    ],
+    "War": [
+      {
+        "name": "War - Overview",
+        "french_name": "Guerre - Aperçu"
+      },
+      {
+        "name": "War - Guides",
+        "french_name": "Guerre - Guides"
+      },
+      {
+        "name": "War - Trends",
+        "french_name": "Guerre - Tendances"
+      }
+    ],
+    "Classic": [
+      {
+        "name": "Classic - Overview",
+        "french_name": "Classique - Aperçu"
+      },
+      {
+        "name": "Classic - Guides",
+        "french_name": "Classique - Guides"
+      },
+      {
+        "name": "Classic - Trends",
+        "french_name": "Classique - Tendances"
+      }
+    ],
+    "Documentary": [
+      {
+        "name": "Documentary - Overview",
+        "french_name": "Documentaire - Aperçu"
+      },
+      {
+        "name": "Documentary - Guides",
+        "french_name": "Documentaire - Guides"
+      },
+      {
+        "name": "Documentary - Trends",
+        "french_name": "Documentaire - Tendances"
+      }
+    ]
+  },
+  "Fan-Star Zone": {
+    "Sports": [
+      {
+        "name": "Sports - Overview",
+        "french_name": "Sports - Aperçu"
+      },
+      {
+        "name": "Sports - Guides",
+        "french_name": "Sports - Guides"
+      },
+      {
+        "name": "Sports - Trends",
+        "french_name": "Sports - Tendances"
+      }
+    ],
+    "Shows": [
+      {
+        "name": "Shows - Overview",
+        "french_name": "Spectacles - Aperçu"
+      },
+      {
+        "name": "Shows - Guides",
+        "french_name": "Spectacles - Guides"
+      },
+      {
+        "name": "Shows - Trends",
+        "french_name": "Spectacles - Tendances"
+      }
+    ],
+    "Multimedia": [
+      {
+        "name": "Multimedia - Overview",
+        "french_name": "Multimédia - Aperçu"
+      },
+      {
+        "name": "Multimedia - Guides",
+        "french_name": "Multimédia - Guides"
+      },
+      {
+        "name": "Multimedia - Trends",
+        "french_name": "Multimédia - Tendances"
+      }
+    ],
+    "Business": [
+      {
+        "name": "Business - Overview",
+        "french_name": "Affaires - Aperçu"
+      },
+      {
+        "name": "Business - Guides",
+        "french_name": "Affaires - Guides"
+      },
+      {
+        "name": "Business - Trends",
+        "french_name": "Affaires - Tendances"
+      }
+    ],
+    "Politics": [
+      {
+        "name": "Politics - Overview",
+        "french_name": "Politique - Aperçu"
+      },
+      {
+        "name": "Politics - Guides",
+        "french_name": "Politique - Guides"
+      },
+      {
+        "name": "Politics - Trends",
+        "french_name": "Politique - Tendances"
+      }
+    ],
+    "Art & Tech": [
+      {
+        "name": "Art & Tech - Overview",
+        "french_name": "Art & Tech - Aperçu"
+      },
+      {
+        "name": "Art & Tech - Guides",
+        "french_name": "Art & Tech - Guides"
+      },
+      {
+        "name": "Art & Tech - Trends",
+        "french_name": "Art & Tech - Tendances"
+      }
+    ],
+    "Religion": [
+      {
+        "name": "Religion - Overview",
+        "french_name": "Religion - Aperçu"
+      },
+      {
+        "name": "Religion - Guides",
+        "french_name": "Religion - Guides"
+      },
+      {
+        "name": "Religion - Trends",
+        "french_name": "Religion - Tendances"
+      }
+    ],
+    "Science & Innovation": [
+      {
+        "name": "Science & Innovation - Overview",
+        "french_name": "Science & Innovation - Aperçu"
+      },
+      {
+        "name": "Science & Innovation - Guides",
+        "french_name": "Science & Innovation - Guides"
+      },
+      {
+        "name": "Science & Innovation - Trends",
+        "french_name": "Science & Innovation - Tendances"
+      }
+    ]
+  },
+  "Kid-Vids": {
+    "Art & Craft": [
+      {
+        "name": "Art & Craft - Overview",
+        "french_name": "Art & Artisanat - Aperçu"
+      },
+      {
+        "name": "Art & Craft - Guides",
+        "french_name": "Art & Artisanat - Guides"
+      },
+      {
+        "name": "Art & Craft - Trends",
+        "french_name": "Art & Artisanat - Tendances"
+      }
+    ],
+    "Toys & Play": [
+      {
+        "name": "Toys & Play - Overview",
+        "french_name": "Jouets & Jeux - Aperçu"
+      },
+      {
+        "name": "Toys & Play - Guides",
+        "french_name": "Jouets & Jeux - Guides"
+      },
+      {
+        "name": "Toys & Play - Trends",
+        "french_name": "Jouets & Jeux - Tendances"
+      }
+    ],
+    "Learning & Hobbies": [
+      {
+        "name": "Learning & Hobbies - Overview",
+        "french_name": "Passion & Apprentissage - Aperçu"
+      },
+      {
+        "name": "Learning & Hobbies - Guides",
+        "french_name": "Passion & Apprentissage - Guides"
+      },
+      {
+        "name": "Learning & Hobbies - Trends",
+        "french_name": "Passion & Apprentissage - Tendances"
+      }
+    ],
+    "Shows & Cartoons": [
+      {
+        "name": "Shows & Cartoons - Overview",
+        "french_name": "Spectacles & Dessin Animé - Aperçu"
+      },
+      {
+        "name": "Shows & Cartoons - Guides",
+        "french_name": "Spectacles & Dessin Animé - Guides"
+      },
+      {
+        "name": "Shows & Cartoons - Trends",
+        "french_name": "Spectacles & Dessin Animé - Tendances"
+      }
+    ],
+    "Music & Dance": [
+      {
+        "name": "Music & Dance - Overview",
+        "french_name": "Musique & Danse - Aperçu"
+      },
+      {
+        "name": "Music & Dance - Guides",
+        "french_name": "Musique & Danse - Guides"
+      },
+      {
+        "name": "Music & Dance - Trends",
+        "french_name": "Musique & Danse - Tendances"
+      }
+    ],
+    "Gaming": [
+      {
+        "name": "Gaming - Overview",
+        "french_name": "Gaming - Aperçu"
+      },
+      {
+        "name": "Gaming - Guides",
+        "french_name": "Gaming - Guides"
+      },
+      {
+        "name": "Gaming - Trends",
+        "french_name": "Gaming - Tendances"
+      }
+    ]
+  },
+  "TV ProgMax": {
+    "English": [
+      {
+        "name": "English - Overview",
+        "french_name": "Anglais - Aperçu"
+      },
+      {
+        "name": "English - Guides",
+        "french_name": "Anglais - Guides"
+      },
+      {
+        "name": "English - Trends",
+        "french_name": "Anglais - Tendances"
+      }
+    ],
+    "French": [
+      {
+        "name": "French - Overview",
+        "french_name": "Français - Aperçu"
+      },
+      {
+        "name": "French - Guides",
+        "french_name": "Français - Guides"
+      },
+      {
+        "name": "French - Trends",
+        "french_name": "Français - Tendances"
+      }
+    ],
+    "Spanish": [
+      {
+        "name": "Spanish - Overview",
+        "french_name": "Espagnol - Aperçu"
+      },
+      {
+        "name": "Spanish - Guides",
+        "french_name": "Espagnol - Guides"
+      },
+      {
+        "name": "Spanish - Trends",
+        "french_name": "Espagnol - Tendances"
+      }
+    ],
+    "Portuguese": [
+      {
+        "name": "Portuguese - Overview",
+        "french_name": "Portugais - Aperçu"
+      },
+      {
+        "name": "Portuguese - Guides",
+        "french_name": "Portugais - Guides"
+      },
+      {
+        "name": "Portuguese - Trends",
+        "french_name": "Portugais - Tendances"
+      }
+    ],
+    "German": [
+      {
+        "name": "German - Overview",
+        "french_name": "Allemand - Aperçu"
+      },
+      {
+        "name": "German - Guides",
+        "french_name": "Allemand - Guides"
+      },
+      {
+        "name": "German - Trends",
+        "french_name": "Allemand - Tendances"
+      }
+    ],
+    "Italian": [
+      {
+        "name": "Italian - Overview",
+        "french_name": "Italien - Aperçu"
+      },
+      {
+        "name": "Italian - Guides",
+        "french_name": "Italien - Guides"
+      },
+      {
+        "name": "Italian - Trends",
+        "french_name": "Italien - Tendances"
+      }
+    ],
+    "Russian": [
+      {
+        "name": "Russian - Overview",
+        "french_name": "Russe - Aperçu"
+      },
+      {
+        "name": "Russian - Guides",
+        "french_name": "Russe - Guides"
+      },
+      {
+        "name": "Russian - Trends",
+        "french_name": "Russe - Tendances"
+      }
+    ],
+    "Ukrainian": [
+      {
+        "name": "Ukrainian - Overview",
+        "french_name": "Ukrainien - Aperçu"
+      },
+      {
+        "name": "Ukrainian - Guides",
+        "french_name": "Ukrainien - Guides"
+      },
+      {
+        "name": "Ukrainian - Trends",
+        "french_name": "Ukrainien - Tendances"
+      }
+    ],
+    "Polish": [
+      {
+        "name": "Polish - Overview",
+        "french_name": "Polonais - Aperçu"
+      },
+      {
+        "name": "Polish - Guides",
+        "french_name": "Polonais - Guides"
+      },
+      {
+        "name": "Polish - Trends",
+        "french_name": "Polonais - Tendances"
+      }
+    ],
+    "Serbian": [
+      {
+        "name": "Serbian - Overview",
+        "french_name": "Serbe - Aperçu"
+      },
+      {
+        "name": "Serbian - Guides",
+        "french_name": "Serbe - Guides"
+      },
+      {
+        "name": "Serbian - Trends",
+        "french_name": "Serbe - Tendances"
+      }
+    ],
+    "Bulgarian": [
+      {
+        "name": "Bulgarian - Overview",
+        "french_name": "Bulgare - Aperçu"
+      },
+      {
+        "name": "Bulgarian - Guides",
+        "french_name": "Bulgare - Guides"
+      },
+      {
+        "name": "Bulgarian - Trends",
+        "french_name": "Bulgare - Tendances"
+      }
+    ],
+    "Romanian": [
+      {
+        "name": "Romanian - Overview",
+        "french_name": "Roumain - Aperçu"
+      },
+      {
+        "name": "Romanian - Guides",
+        "french_name": "Roumain - Guides"
+      },
+      {
+        "name": "Romanian - Trends",
+        "french_name": "Roumain - Tendances"
+      }
+    ],
+    "Mandarin": [
+      {
+        "name": "Mandarin - Overview",
+        "french_name": "Mandarin - Aperçu"
+      },
+      {
+        "name": "Mandarin - Guides",
+        "french_name": "Mandarin - Guides"
+      },
+      {
+        "name": "Mandarin - Trends",
+        "french_name": "Mandarin - Tendances"
+      }
+    ],
+    "Hindi": [
+      {
+        "name": "Hindi - Overview",
+        "french_name": "Hindi - Aperçu"
+      },
+      {
+        "name": "Hindi - Guides",
+        "french_name": "Hindi - Guides"
+      },
+      {
+        "name": "Hindi - Trends",
+        "french_name": "Hindi - Tendances"
+      }
+    ],
+    "Urdu": [
+      {
+        "name": "Urdu - Overview",
+        "french_name": "Urdu - Aperçu"
+      },
+      {
+        "name": "Urdu - Guides",
+        "french_name": "Urdu - Guides"
+      },
+      {
+        "name": "Urdu - Trends",
+        "french_name": "Urdu - Tendances"
+      }
+    ],
+    "Arabic": [
+      {
+        "name": "Arabic - Overview",
+        "french_name": "Arabe - Aperçu"
+      },
+      {
+        "name": "Arabic - Guides",
+        "french_name": "Arabe - Guides"
+      },
+      {
+        "name": "Arabic - Trends",
+        "french_name": "Arabe - Tendances"
+      }
+    ],
+    "Persian": [
+      {
+        "name": "Persian - Overview",
+        "french_name": "Persan - Aperçu"
+      },
+      {
+        "name": "Persian - Guides",
+        "french_name": "Persan - Guides"
+      },
+      {
+        "name": "Persian - Trends",
+        "french_name": "Persan - Tendances"
+      }
+    ],
+    "Turkish": [
+      {
+        "name": "Turkish - Overview",
+        "french_name": "Turc - Aperçu"
+      },
+      {
+        "name": "Turkish - Guides",
+        "french_name": "Turc - Guides"
+      },
+      {
+        "name": "Turkish - Trends",
+        "french_name": "Turc - Tendances"
+      }
+    ],
+    "Hebrew": [
+      {
+        "name": "Hebrew - Overview",
+        "french_name": "Hébreu - Aperçu"
+      },
+      {
+        "name": "Hebrew - Guides",
+        "french_name": "Hébreu - Guides"
+      },
+      {
+        "name": "Hebrew - Trends",
+        "french_name": "Hébreu - Tendances"
+      }
+    ],
+    "Kurdish": [
+      {
+        "name": "Kurdish - Overview",
+        "french_name": "Kurde - Aperçu"
+      },
+      {
+        "name": "Kurdish - Guides",
+        "french_name": "Kurde - Guides"
+      },
+      {
+        "name": "Kurdish - Trends",
+        "french_name": "Kurde - Tendances"
+      }
+    ],
+    "Bengali": [
+      {
+        "name": "Bengali - Overview",
+        "french_name": "Bengali - Aperçu"
+      },
+      {
+        "name": "Bengali - Guides",
+        "french_name": "Bengali - Guides"
+      },
+      {
+        "name": "Bengali - Trends",
+        "french_name": "Bengali - Tendances"
+      }
+    ],
+    "Indonesian": [
+      {
+        "name": "Indonesian - Overview",
+        "french_name": "Indonésien - Aperçu"
+      },
+      {
+        "name": "Indonesian - Guides",
+        "french_name": "Indonésien - Guides"
+      },
+      {
+        "name": "Indonesian - Trends",
+        "french_name": "Indonésien - Tendances"
+      }
+    ],
+    "Korean": [
+      {
+        "name": "Korean - Overview",
+        "french_name": "Coréen - Aperçu"
+      },
+      {
+        "name": "Korean - Guides",
+        "french_name": "Coréen - Guides"
+      },
+      {
+        "name": "Korean - Trends",
+        "french_name": "Coréen - Tendances"
+      }
+    ],
+    "Japanese": [
+      {
+        "name": "Japanese - Overview",
+        "french_name": "Japonais - Aperçu"
+      },
+      {
+        "name": "Japanese - Guides",
+        "french_name": "Japonais - Guides"
+      },
+      {
+        "name": "Japanese - Trends",
+        "french_name": "Japonais - Tendances"
+      }
+    ]
+  },
+  "Learnings & Hobbies": {
+    "Art": [
+      {
+        "name": "Art - Overview",
+        "french_name": "Art - Aperçu"
+      },
+      {
+        "name": "Art - Guides",
+        "french_name": "Art - Guides"
+      },
+      {
+        "name": "Art - Trends",
+        "french_name": "Art - Tendances"
+      }
+    ],
+    "Science & Tech": [
+      {
+        "name": "Science & Tech - Overview",
+        "french_name": "Science & Tech - Aperçu"
+      },
+      {
+        "name": "Science & Tech - Guides",
+        "french_name": "Science & Tech - Guides"
+      },
+      {
+        "name": "Science & Tech - Trends",
+        "french_name": "Science & Tech - Tendances"
+      }
+    ],
+    "Music": [
+      {
+        "name": "Music - Overview",
+        "french_name": "Musique - Aperçu"
+      },
+      {
+        "name": "Music - Guides",
+        "french_name": "Musique - Guides"
+      },
+      {
+        "name": "Music - Trends",
+        "french_name": "Musique - Tendances"
+      }
+    ],
+    "Business": [
+      {
+        "name": "Business - Overview",
+        "french_name": "Affaires - Aperçu"
+      },
+      {
+        "name": "Business - Guides",
+        "french_name": "Affaires - Guides"
+      },
+      {
+        "name": "Business - Trends",
+        "french_name": "Affaires - Tendances"
+      }
+    ],
+    "Health": [
+      {
+        "name": "Health - Overview",
+        "french_name": "Santé - Aperçu"
+      },
+      {
+        "name": "Health - Guides",
+        "french_name": "Santé - Guides"
+      },
+      {
+        "name": "Health - Trends",
+        "french_name": "Santé - Tendances"
+      }
+    ],
+    "Social Studies": [
+      {
+        "name": "Social Studies - Overview",
+        "french_name": "Sciences Sociales - Aperçu"
+      },
+      {
+        "name": "Social Studies - Guides",
+        "french_name": "Sciences Sociales - Guides"
+      },
+      {
+        "name": "Social Studies - Trends",
+        "french_name": "Sciences Sociales - Tendances"
+      }
+    ],
+    "Humanities": [
+      {
+        "name": "Humanities - Overview",
+        "french_name": "Sciences Humaines - Aperçu"
+      },
+      {
+        "name": "Humanities - Guides",
+        "french_name": "Sciences Humaines - Guides"
+      },
+      {
+        "name": "Humanities - Trends",
+        "french_name": "Sciences Humaines - Tendances"
+      }
+    ],
+    "Foreign Languages": [
+      {
+        "name": "Foreign Languages - Overview",
+        "french_name": "Langues Étrangères - Aperçu"
+      },
+      {
+        "name": "Foreign Languages - Guides",
+        "french_name": "Langues Étrangères - Guides"
+      },
+      {
+        "name": "Foreign Languages - Trends",
+        "french_name": "Langues Étrangères - Tendances"
+      }
+    ]
+  },
+  "Mondo Market": {
+    "Africa": [
+      {
+        "name": "Africa - Overview",
+        "french_name": "Afrique - Aperçu"
+      },
+      {
+        "name": "Africa - Guides",
+        "french_name": "Afrique - Guides"
+      },
+      {
+        "name": "Africa - Trends",
+        "french_name": "Afrique - Tendances"
+      }
+    ],
+    "Americas": [
+      {
+        "name": "Americas - Overview",
+        "french_name": "Les Amériques - Aperçu"
+      },
+      {
+        "name": "Americas - Guides",
+        "french_name": "Les Amériques - Guides"
+      },
+      {
+        "name": "Americas - Trends",
+        "french_name": "Les Amériques - Tendances"
+      }
+    ],
+    "Asia": [
+      {
+        "name": "Asia - Overview",
+        "french_name": "Asie - Aperçu"
+      },
+      {
+        "name": "Asia - Guides",
+        "french_name": "Asie - Guides"
+      },
+      {
+        "name": "Asia - Trends",
+        "french_name": "Asie - Tendances"
+      }
+    ],
+    "Middle-East": [
+      {
+        "name": "Middle-East - Overview",
+        "french_name": "Moyen-Orient - Aperçu"
+      },
+      {
+        "name": "Middle-East - Guides",
+        "french_name": "Moyen-Orient - Guides"
+      },
+      {
+        "name": "Middle-East - Trends",
+        "french_name": "Moyen-Orient - Tendances"
+      }
+    ]
+  }
+}
