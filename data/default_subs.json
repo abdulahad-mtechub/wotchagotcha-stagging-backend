@@ -1,0 +1,6 @@
+{
+  "subs": [
+    { "name": "General", "french_name": "Général" },
+    { "name": "Popular", "french_name": "Populaire" }
+  ]
+}

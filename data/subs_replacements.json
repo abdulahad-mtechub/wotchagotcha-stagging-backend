@@ -1,0 +1,72 @@
+{
+  "video_category": {
+    "default": [
+      {"name":"All Videos","french_name":"Tous les vidéos"},
+      {"name":"Top Videos","french_name":"Vidéos populaires"}
+    ]
+  },
+  "pic_category": {
+    "Funny": [
+      {"name":"Humor","french_name":"Humour"},
+      {"name":"Memes","french_name":"Mèmes"}
+    ],
+    "People": [
+      {"name":"Portraits","french_name":"Portraits"},
+      {"name":"Street Photography","french_name":"Photographie de rue"}
+    ],
+    "Food": [
+      {"name":"Recipes","french_name":"Recettes"},
+      {"name":"Restaurants","french_name":"Restaurants"}
+    ],
+    "Travel & Tourism": [
+      {"name":"Destinations","french_name":"Destinations"},
+      {"name":"Travel Guides","french_name":"Guides de voyage"}
+    ],
+    "default": [
+      {"name":"Overview","french_name":"Aperçu"},
+      {"name":"Top Picks","french_name":"Choix populaires"}
+    ]
+  },
+  "NEWS_category": {
+    "default": [
+      {"name":"Headlines","french_name":"À la une"},
+      {"name":"Analysis","french_name":"Analyses"}
+    ]
+  },
+  "cinematics_category": {
+    "default": [
+      {"name":"Trailers","french_name":"Bandes-annonces"},
+      {"name":"Reviews","french_name":"Critiques"}
+    ]
+  },
+  "fan_star_category": {
+    "default": [
+      {"name":"Interviews","french_name":"Interviews"},
+      {"name":"Behind the Scenes","french_name":"Coulisses"}
+    ]
+  },
+  "tv_progmax_category": {
+    "default": [
+      {"name":"Episodes","french_name":"Épisodes"},
+      {"name":"Channels","french_name":"Chaînes"}
+    ]
+  },
+  "kid_vids_category": {
+    "default": [
+      {"name":"Kids Shows","french_name":"Émissions pour enfants"},
+      {"name":"Songs","french_name":"Chansons"}
+    ]
+  },
+  "learning_hobbies_category": {
+    "default": [
+      {"name":"Courses","french_name":"Cours"},
+      {"name":"Tutorials","french_name":"Tutos"}
+    ]
+  },
+  "sports_category": {
+    "default": [
+      {"name":"Highlights","french_name":"Temps forts"},
+      {"name":"Matchs & Events","french_name":"Matchs & Événements"}
+    ]
+  }
+}

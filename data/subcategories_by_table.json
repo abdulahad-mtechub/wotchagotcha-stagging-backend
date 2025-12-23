@@ -1,0 +1,80 @@
+{
+  "video_category": {
+    "09V": [
+      {"name":"Parks & Fun","french_name":"Parcs & Amusement"},
+      {"name":"Food & Places","french_name":"Nourriture & Lieux"}
+    ],
+    "PV": [
+      {"name":"Parks & Fun","french_name":"Parcs & Amusement"},
+      {"name":"Food & Places","french_name":"Nourriture & Lieux"}
+    ]
+  },
+  "pic_category": {
+    "Animals": [
+      {"name":"Wildlife","french_name":"Faune"},
+      {"name":"Pets","french_name":"Animaux de compagnie"}
+    ],
+    "Art": [
+      {"name":"Exhibitions","french_name":"Expositions"},
+      {"name":"Street Art","french_name":"Art de rue"}
+    ]
+  },
+  "NEWS_category": {
+    "News": [
+      {"name":"Local","french_name":"Local"},
+      {"name":"National","french_name":"National"}
+    ],
+    "Business": [
+      {"name":"Markets","french_name":"Marchés"},
+      {"name":"Economy","french_name":"Économie"}
+    ]
+  },
+  "cinematics_category": {
+    "Action": [
+      {"name":"Blockbusters","french_name":"Succès"},
+      {"name":"Stunts","french_name":"Cascades"}
+    ],
+    "Comedy": [
+      {"name":"Standup","french_name":"Stand-up"},
+      {"name":"Sketches","french_name":"Sketchs"}
+    ]
+  },
+  "fan_star_category": {
+    "Shows": [
+      {"name":"Interviews","french_name":"Interviews"},
+      {"name":"Backstage","french_name":"Coulisses"}
+    ]
+  },
+  "tv_progmax_category": {
+    "English": [
+      {"name":"Episodes","french_name":"Épisodes"},
+      {"name":"Channels","french_name":"Chaînes"}
+    ],
+    "French": [
+      {"name":"Episodes","french_name":"Épisodes"},
+      {"name":"Channels","french_name":"Chaînes"}
+    ]
+  },
+  "kid_vids_category": {
+    "Music & Dance": [
+      {"name":"Songs","french_name":"Chansons"},
+      {"name":"Dance","french_name":"Danse"}
+    ],
+    "Shows & Cartoons": [
+      {"name":"Cartoons","french_name":"Dessins animés"},
+      {"name":"Series","french_name":"Séries"}
+    ]
+  },
+  "learning_hobbies_category": {
+    "Art": [
+      {"name":"Courses","french_name":"Cours"},
+      {"name":"Tutorials","french_name":"Tutos"}
+    ]
+  },
+  "sports_category": {
+    "Football": [
+      {"name":"Highlights","french_name":"Faits saillants"},
+      {"name":"Matches","french_name":"Matchs"}
+    ]
+  }
+}
