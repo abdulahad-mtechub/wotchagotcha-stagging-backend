@@ -850,7 +850,14 @@ export const getAllPicTourByCategory = async (req, res) => {
       return acc;
     }, {});
 
-    const data = Object.values(groupedBySubCategory);
+    let data = Object.values(groupedBySubCategory);
+    
+    // Sort subcategories by the newest tour's created_at (DESC)
+    data.sort((a, b) => {
+      const aNewest = new Date(a.tour_result.Tours[0]?.created_at || 0);
+      const bNewest = new Date(b.tour_result.Tours[0]?.created_at || 0);
+      return bNewest - aNewest;
+    });
 
     return res.status(200).json({
       statusCode: 200,

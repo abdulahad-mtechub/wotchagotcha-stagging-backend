@@ -147,7 +147,7 @@ export const getAllSubCategoriesByCategory = async (req, res) => {
       SELECT sc.*
       FROM public.QAFI_sub_category sc
       WHERE sc.category_id = $1
-      ORDER BY sc.id DESC`;
+      ORDER BY sc.created_at DESC`;
 
     const { rows } = await pool.query(subCategoryQuery, [category_id]);
 

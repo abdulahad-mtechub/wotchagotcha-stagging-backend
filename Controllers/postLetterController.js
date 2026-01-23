@@ -2331,7 +2331,14 @@ export const getAllLettersByCategory = async (req, res) => {
       return acc;
     }, {});
 
-    const data = Object.values(groupedLetters);
+    let data = Object.values(groupedLetters);
+    
+    // Sort subcategories by the newest letter's created_at (DESC)
+    data.sort((a, b) => {
+      const aNewest = new Date(a.total_result.letters[0]?.post_date || a.total_result.letters[0]?.created_at || 0);
+      const bNewest = new Date(b.total_result.letters[0]?.post_date || b.total_result.letters[0]?.created_at || 0);
+      return bNewest - aNewest;
+    });
 
     res.status(200).json({
       statusCode: 200,

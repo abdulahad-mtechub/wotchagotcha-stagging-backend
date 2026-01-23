@@ -472,10 +472,18 @@ ORDER BY v.created_at DESC
       delete subcategory.french_name;
     }
 
+    // Ensure subcategories are ordered by their newest video's created_at (DESC)
+    let data = subcategories;
+    data.sort((a, b) => {
+      const aNewest = new Date(a.video_result.videos[0]?.created_at || 0);
+      const bNewest = new Date(b.video_result.videos[0]?.created_at || 0);
+      return bNewest - aNewest;
+    });
+
     return res.status(200).json({
       statusCode: 200,
       message: "Subcategories with videos retrieved successfully",
-      data: subcategories,
+      data: data,
     });
   } catch (error) {
     console.error(error);
