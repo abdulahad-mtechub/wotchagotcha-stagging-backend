@@ -943,7 +943,14 @@ export const getAllVideosByCategory = async (req, res) => {
       return acc;
     }, {});
 
-    const data = Object.values(groupedBySubCategory);
+    let data = Object.values(groupedBySubCategory);
+    
+    // Sort subcategories by the newest video's created_at (DESC)
+    data.sort((a, b) => {
+      const aNewest = new Date(a.video_result.Videos[0]?.created_at || 0);
+      const bNewest = new Date(b.video_result.Videos[0]?.created_at || 0);
+      return bNewest - aNewest;
+    });
 
     return res.status(200).json({
       statusCode: 200,
