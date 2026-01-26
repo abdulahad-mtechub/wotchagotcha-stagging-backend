@@ -854,6 +854,16 @@ CREATE TABLE IF NOT EXISTS public.sport_comment (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+-- Note: comments for marketplace items are stored in `mondon_market_comment`.
+-- Link comments to the existing `item` table (item.id) to reuse items.
+CREATE TABLE IF NOT EXISTS public.mondon_market_comment (
+    id SERIAL PRIMARY KEY,
+    item_id INT REFERENCES item(id) ON DELETE CASCADE NOT NULL,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    comment TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 CREATE TABLE IF NOT EXISTS public.sport_like (
     id SERIAL PRIMARY KEY,
     sport_id INT REFERENCES sports(id) ON DELETE CASCADE NOT NULL,
