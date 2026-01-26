@@ -136,7 +136,7 @@ export const getAllSubCategoriesByCategory = async (req, res) => {
       queryParameters.push(category_id);
     }
 
-    query += ` ORDER BY sbc.created_at ASC`;
+    query += ` ORDER BY sbc.created_at DESC`;
     if (req.query.page !== undefined && req.query.limit !== undefined) {
       query += ` LIMIT $${queryParameters.length + 1} OFFSET $${
         queryParameters.length + 2

@@ -1,30 +1,42 @@
 import nodemailer from "nodemailer";
+
+const EMAIL_HOST = process.env.EMAIL_HOST || "smtp.gmail.com";
+const EMAIL_PORT = process.env.EMAIL_PORT
+  ? Number(process.env.EMAIL_PORT)
+  : 465;
+const EMAIL_SECURE = process.env.EMAIL_SECURE
+  ? process.env.EMAIL_SECURE === "true"
+  : true;
+const EMAIL_USER = process.env.EMAIL_USER || "User6.mtechub@gmail.com";
+const EMAIL_PASS = process.env.EMAIL_PASS || "jibnmztkypjwvxic";
+const EMAIL_FROM = process.env.EMAIL_FROM || EMAIL_USER;
+
 export const emailSent = (email, output, subject) => {
   return new Promise((resolve, reject) => {
-    var transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true, // use SSL
-      service: "gmail",
+    const transporter = nodemailer.createTransport({
+      host: EMAIL_HOST,
+      port: EMAIL_PORT,
+      secure: EMAIL_SECURE,
       auth: {
-        user: "testing.mtechub@gmail.com",
-        pass: "xcvvjgixeuwgqmyl",
+        user: EMAIL_USER,
+        pass: EMAIL_PASS,
       },
     });
-    var mailOptions = {
-      from: "testing.mtechub@gmail.com",
+
+    const mailOptions = {
+      from: EMAIL_FROM,
       to: email,
       subject: subject,
       html: output,
     };
+
     transporter.sendMail(mailOptions, function (error, info) {
       if (error) {
-        console.log(error);
-        reject(error);
-      } else {
-        console.log("Email sent: " + info.response);
-        resolve(true);
+        console.log("Email send error:", error);
+        return reject(error);
       }
+      console.log("Email sent: " + info.response);
+      return resolve(true);
     });
   });
 };

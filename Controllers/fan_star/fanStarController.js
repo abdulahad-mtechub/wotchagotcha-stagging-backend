@@ -383,10 +383,10 @@ export const getSubcategoriesWithVideosByCategory = async (req, res) => {
 
     // Get all subcategories for the given category
     const subcategoriesQuery = `
-      SELECT id, name , french_name 
+      SELECT id, name , french_name, created_at
       FROM fan_star_sub_category 
       WHERE category_id = $1
-      ORDER BY id DESC
+      ORDER BY created_at DESC
     `;
     const subcategoriesResult = await pool.query(subcategoriesQuery, [
       category_id,

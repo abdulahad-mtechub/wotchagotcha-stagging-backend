@@ -718,7 +718,14 @@ export const getAllNewsByCategory = async (req, res) => {
     }, {});
 
     // Convert grouped news into an array format
-    const responseData = Object.values(groupedNews);
+    let responseData = Object.values(groupedNews);
+    
+    // Sort subcategories by the newest news item's created_at (DESC)
+    responseData.sort((a, b) => {
+      const aNewest = new Date(a.news_result.News[0]?.created_at || 0);
+      const bNewest = new Date(b.news_result.News[0]?.created_at || 0);
+      return bNewest - aNewest;
+    });
 
     return res.status(200).json({
       statusCode: 200,
