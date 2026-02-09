@@ -87,7 +87,8 @@ CREATE TABLE IF NOT EXISTS public.xpi_videos (
 );
 CREATE TABLE IF NOT EXISTS public.video_comment (
     id SERIAL PRIMARY KEY,
-    video_id INT REFERENCES xpi_videos(id) ON DELETE CASCADE NOT NULL,
+    video_id INT REFERENCES xpi_videos(id) ON DELETE CASCADE,
+    top_video_id INT REFERENCES top_video(id) ON DELETE CASCADE,
     user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     comment TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -113,6 +114,21 @@ CREATE TABLE IF NOT EXISTS public.top_video (
     description TEXT NOT NULL,
     video_category INT REFERENCES video_category(id) ON DELETE CASCADE NOT NULL,
     video VARCHAR(255) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+-- Removed separate top_video_comment table: top-video comments are stored in `video_comment.top_video_id`
+CREATE TABLE IF NOT EXISTS public.top_video_like (
+    id SERIAL PRIMARY KEY,
+    video_id INT REFERENCES top_video(id) ON DELETE CASCADE NOT NULL,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS public.top_video_viewed (
+    id SERIAL PRIMARY KEY,
+    video_id INT REFERENCES top_video(id) ON DELETE CASCADE NOT NULL,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

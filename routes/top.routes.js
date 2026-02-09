@@ -50,6 +50,9 @@ import {
   updateTopQAFI,
   updateTopTour,
   updateTopVideo,
+  sendTopVideoComment,
+  getAllTopVideoComments,
+  likeUnlikeTopVideo,
 } from "../Controllers/topController.js";
 import { verification } from "../Middleware/Verification.js";
 import { uploadVideoWithLengthCheck } from "../utils/VideoHandler.js";
@@ -184,4 +187,10 @@ topRoute.get("/getSpecificTopLetter/:id", getSpecificTopLetter);
 topRoute.get("/getAllTopLetter", getAllTopLetter);
 topRoute.delete("/deleteAllTopLetter", deleteAllTopLetter);
 topRoute.get("/app/top_letter", getTopLetterApp);
+
+// Top Video Comment and Like routes.........................................
+topRoute.post("/top_video/comment", sendTopVideoComment);
+topRoute.get("/top_video/comments/:id", getAllTopVideoComments);
+topRoute.post("/top_video/like", likeUnlikeTopVideo);
+
 export default topRoute;
