@@ -261,7 +261,7 @@ export const deleteAllPicTours = async (req, res) => {
 };
 export const sendComment = async (req, res) => {
   try {
-    const { pic_tours_id, user_id, comment } = req.body;
+    const { pic_tours_id, user_id, comment, type } = req.body;
     const checkQuery1 =
       "SELECT * FROM users WHERE id = $1 AND is_deleted=FALSE";
     const checkResult1 = await pool.query(checkQuery1, [user_id]);
@@ -272,26 +272,37 @@ export const sendComment = async (req, res) => {
         .status(404)
         .json({ statusCode: 404, message: "user not exist" });
     }
-    const createQuery =
-      "INSERT INTO pic_comment (pic_tours_id,user_id,comment) VALUES($1,$2,$3) RETURNING *";
-    const result = await pool.query(createQuery, [
-      pic_tours_id,
-      user_id,
-      comment,
-    ]);
+    let result;
+    if (type === "toptour") {
+      const checkTopQuery = "SELECT * FROM top_tours WHERE id = $1";
+      const checkTopResult = await pool.query(checkTopQuery, [pic_tours_id]);
+      if (checkTopResult.rowCount === 0) {
+        return res
+          .status(404)
+          .json({ statusCode: 404, message: "Pic tour does not exist" });
+      }
+      const createQuery =
+        "INSERT INTO pic_comment (top_tours_id,user_id,comment) VALUES($1,$2,$3) RETURNING *";
+      result = await pool.query(createQuery, [pic_tours_id, user_id, comment]);
+    } else {
+      const createQuery =
+        "INSERT INTO pic_comment (pic_tours_id,user_id,comment) VALUES($1,$2,$3) RETURNING *";
+      result = await pool.query(createQuery, [pic_tours_id, user_id, comment]);
+    }
     if (result.rowCount === 1) {
       let commentQuery = `SELECT 
       v.pic_tours_id AS tour_id,
+      v.top_tours_id AS top_tours_id,
       v.id AS commentId,
-            v.comment AS comment,
-            u.id AS userId,
-            u.username AS username,
-            u.image AS userImage
-            FROM pic_comment v
-            LEFT JOIN users u ON v.user_id = u.id
-            WHERE v.id=$1
-            ORDER BY v.created_at DESC;
-            `;
+        v.comment AS comment,
+        u.id AS userId,
+        u.username AS username,
+        u.image AS userImage
+        FROM pic_comment v
+        LEFT JOIN users u ON v.user_id = u.id
+        WHERE v.id=$1
+        ORDER BY v.created_at DESC;
+        `;
       const { rows } = await pool.query(commentQuery, [result.rows[0].id]);
       return res.status(201).json({
         statusCode: 201,
@@ -302,11 +313,11 @@ export const sendComment = async (req, res) => {
     res.status(400).json({ statusCode: 400, message: "Not uploaded" });
   } catch (error) {
     console.error(error);
-    if (error.constraint === "pic_comment_pic_tours_id_fkey") {
+    if (error.constraint === "pic_comment_user_id_fkey") {
       return res
         .status(400)
-        .json({ statusCode: 400, message: "Pic tour does not exist" });
-    } else if (error.constraint === "pic_comment_user_id_fkey") {
+        .json({ statusCode: 400, message: "user does not exist" });
+    } else if (error.constraint === "pic_comment_pic_tours_id_fkey" || error.constraint === "pic_comment_top_tours_id_fkey") {
       return res
         .status(400)
         .json({ statusCode: 400, message: "user does not exist" });
@@ -317,7 +328,21 @@ export const sendComment = async (req, res) => {
 export const getAllCommentsByPicTours = async (req, res) => {
   try {
     const { id } = req.params;
-    let commentQuery = `SELECT v.id AS commentId,
+    const { type } = req.query;
+    let commentQuery;
+    if (type === "toptour") {
+      commentQuery = `SELECT v.id AS commentId,
+      v.comment AS comment,
+      u.id AS userId,
+      u.username AS username,
+      u.image AS userImage
+      FROM pic_comment v
+      LEFT JOIN users u ON v.user_id = u.id
+      WHERE top_tours_id=$1 AND u.is_deleted=FALSE
+      ORDER BY v.created_at DESC;
+      `;
+    } else {
+      commentQuery = `SELECT v.id AS commentId,
       v.comment AS comment,
       u.id AS userId,
       u.username AS username,
@@ -327,6 +352,7 @@ export const getAllCommentsByPicTours = async (req, res) => {
       WHERE pic_tours_id=$1 AND u.is_deleted=FALSE
       ORDER BY v.created_at DESC;
       `;
+    }
 
     const { rows } = await pool.query(commentQuery, [id]);
     res.status(200).json({
@@ -344,39 +370,80 @@ export const getAllCommentsByPicTours = async (req, res) => {
 
 export const likePicTour = async (req, res) => {
   try {
-    const { pic_tour_id, user_id } = req.body;
+    const { pic_tour_id, user_id, type } = req.body;
 
-    // Check if the user has already liked the video
-    const checkQuery =
-      "SELECT * FROM like_pic WHERE pic_tours_id = $1 AND user_id = $2";
-    const checkResult = await pool.query(checkQuery, [pic_tour_id, user_id]);
+    if (type === "toptour") {
+      // top tours like
+      const checkTopQuery = "SELECT * FROM top_tours WHERE id = $1";
+      const checkTopResult = await pool.query(checkTopQuery, [pic_tour_id]);
+      if (checkTopResult.rowCount === 0) {
+        return res
+          .status(404)
+          .json({ statusCode: 404, message: "Pic tour does not exist" });
+      }
 
-    if (checkResult.rowCount > 0) {
-      // The user has already liked the video, return an error
-      return res.status(400).json({
-        statusCode: 400,
-        message: "User has already liked the pic tour",
-      });
-    }
-    const createQuery =
-      "INSERT INTO like_pic (pic_tours_id,user_id) VALUES($1,$2) RETURNING *";
-    const result = await pool.query(createQuery, [pic_tour_id, user_id]);
-    if (result.rowCount === 1) {
-      return res.status(201).json({
-        statusCode: 201,
-        message: "Pic tour like successfully",
-        data: result.rows[0],
-      });
+      const checkQuery =
+        "SELECT * FROM top_tours_like WHERE pic_tours_id = $1 AND user_id = $2";
+      const checkResult = await pool.query(checkQuery, [pic_tour_id, user_id]);
+
+      if (checkResult.rowCount > 0) {
+        return res.status(400).json({
+          statusCode: 400,
+          message: "User has already liked the pic tour",
+        });
+      }
+
+      const createQuery =
+        "INSERT INTO top_tours_like (pic_tours_id,user_id) VALUES($1,$2) RETURNING *";
+      const result = await pool.query(createQuery, [pic_tour_id, user_id]);
+      if (result.rowCount === 1) {
+        return res.status(201).json({
+          statusCode: 201,
+          message: "Pic tour like successfully",
+          data: result.rows[0],
+        });
+      }
+    } else {
+      const { pic_tour_id: id, user_id: uid } = req.body;
+      const checkQuery =
+        "SELECT * FROM like_pic WHERE pic_tours_id = $1 AND user_id = $2";
+      const checkResult = await pool.query(checkQuery, [id, uid]);
+
+      if (checkResult.rowCount > 0) {
+        return res.status(400).json({
+          statusCode: 400,
+          message: "User has already liked the pic tour",
+        });
+      }
+      const createQuery =
+        "INSERT INTO like_pic (pic_tours_id,user_id) VALUES($1,$2) RETURNING *";
+      const result = await pool.query(createQuery, [id, uid]);
+      if (result.rowCount === 1) {
+        return res.status(201).json({
+          statusCode: 201,
+          message: "Pic tour like successfully",
+          data: result.rows[0],
+        });
+      }
     }
     res.status(400).json({ statusCode: 400, message: "Not uploaded" });
   } catch (error) {
     console.error(error);
+    if (error.constraint === "like_pic_pic_tours_id_fkey" || error.constraint === "top_tours_like_pic_tours_id_fkey") {
+      return res
+        .status(400)
+        .json({ statusCode: 400, message: "Pic tour does not exist" });
+    } else if (error.constraint === "like_pic_user_id_fkey" || error.constraint === "top_tours_like_user_id_fkey") {
+      return res
+        .status(400)
+        .json({ statusCode: 400, message: "user does not exist" });
+    }
     res.status(500).json({ statusCode: 500, message: "Internal server error" });
   }
 };
 export const likeUnlikePicTour = async (req, res) => {
   try {
-    const { pic_tour_id, user_id } = req.body;
+    const { pic_tour_id, user_id, type } = req.body;
     const checkQuery1 =
       "SELECT * FROM users WHERE id = $1 AND is_deleted=FALSE";
     const checkResult1 = await pool.query(checkQuery1, [user_id]);
@@ -387,56 +454,88 @@ export const likeUnlikePicTour = async (req, res) => {
         .status(404)
         .json({ statusCode: 404, message: "user not exist" });
     }
-    const checkQafiQuery = "SELECT * FROM pic_tours WHERE id = $1";
-    const checkQafiResult = await pool.query(checkQafiQuery, [pic_tour_id]);
+    if (type === "toptour") {
+      const checkTopQuery = "SELECT * FROM top_tours WHERE id = $1";
+      const checkTopResult = await pool.query(checkTopQuery, [pic_tour_id]);
 
-    if (checkQafiResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Pic Tour not exist" });
-    }
+      if (checkTopResult.rowCount === 0) {
+        return res
+          .status(404)
+          .json({ statusCode: 404, message: "Pic Tour not exist" });
+      }
 
-    // Check if the user has already liked the video
-    const checkQuery =
-      "SELECT * FROM like_pic WHERE pic_tours_id = $1 AND user_id = $2";
-    const checkResult = await pool.query(checkQuery, [pic_tour_id, user_id]);
+      const checkQuery =
+        "SELECT * FROM top_tours_like WHERE pic_tours_id = $1 AND user_id = $2";
+      const checkResult = await pool.query(checkQuery, [pic_tour_id, user_id]);
 
-    if (checkResult.rowCount > 0) {
+      if (checkResult.rowCount > 0) {
+        const deleteQuery =
+          "DELETE FROM top_tours_like WHERE user_id=$1 AND pic_tours_id=$2 RETURNING *";
+        const result = await pool.query(deleteQuery, [user_id, pic_tour_id]);
+        if (result.rowCount === 1) {
+          return res.status(200).json({
+            statusCode: 201,
+            message: "Tour Unlike successfully",
+            data: result.rows[0],
+          });
+        }
+      }
       const createQuery =
-        "DELETE FROM like_pic WHERE user_id=$1 AND pic_tours_id=$2 RETURNING *";
-      const result = await pool.query(createQuery, [user_id, pic_tour_id]);
+        "INSERT INTO top_tours_like (pic_tours_id,user_id) VALUES($1,$2) RETURNING *";
+      const result = await pool.query(createQuery, [pic_tour_id, user_id]);
       if (result.rowCount === 1) {
-        return res.status(200).json({
+        return res.status(201).json({
           statusCode: 201,
-          message: "Tour Unlike successfully",
+          message: "Tour like successfully",
           data: result.rows[0],
         });
       }
-      //   return res
-      //     .status(400)
-      //     .json({
-      //       statusCode: 400,
-      //       message: "User has already liked the pic tour",
-      //     });
-    }
-    const createQuery =
-      "INSERT INTO like_pic (pic_tours_id,user_id) VALUES($1,$2) RETURNING *";
-    const result = await pool.query(createQuery, [pic_tour_id, user_id]);
-    if (result.rowCount === 1) {
-      return res.status(201).json({
-        statusCode: 201,
-        message: "Tour like successfully",
-        data: result.rows[0],
-      });
+    } else {
+      const checkQafiQuery = "SELECT * FROM pic_tours WHERE id = $1";
+      const checkQafiResult = await pool.query(checkQafiQuery, [pic_tour_id]);
+
+      if (checkQafiResult.rowCount === 0) {
+        return res
+          .status(404)
+          .json({ statusCode: 404, message: "Pic Tour not exist" });
+      }
+
+      // Check if the user has already liked the video
+      const checkQuery =
+        "SELECT * FROM like_pic WHERE pic_tours_id = $1 AND user_id = $2";
+      const checkResult = await pool.query(checkQuery, [pic_tour_id, user_id]);
+
+      if (checkResult.rowCount > 0) {
+        const createQuery =
+          "DELETE FROM like_pic WHERE user_id=$1 AND pic_tours_id=$2 RETURNING *";
+        const result = await pool.query(createQuery, [user_id, pic_tour_id]);
+        if (result.rowCount === 1) {
+          return res.status(200).json({
+            statusCode: 201,
+            message: "Tour Unlike successfully",
+            data: result.rows[0],
+          });
+        }
+      }
+      const createQuery =
+        "INSERT INTO like_pic (pic_tours_id,user_id) VALUES($1,$2) RETURNING *";
+      const result = await pool.query(createQuery, [pic_tour_id, user_id]);
+      if (result.rowCount === 1) {
+        return res.status(201).json({
+          statusCode: 201,
+          message: "Tour like successfully",
+          data: result.rows[0],
+        });
+      }
     }
     res.status(400).json({ statusCode: 400, message: "Not uploaded" });
   } catch (error) {
     console.error(error);
-    if (error.constraint === "like_pic_pic_tours_id_fkey") {
+    if (error.constraint === "like_pic_pic_tours_id_fkey" || error.constraint === "top_tours_like_pic_tours_id_fkey") {
       return res
         .status(400)
         .json({ statusCode: 400, message: "Pic tour does not exist" });
-    } else if (error.constraint === "like_pic_user_id_fkey") {
+    } else if (error.constraint === "like_pic_user_id_fkey" || error.constraint === "top_tours_like_user_id_fkey") {
       return res
         .status(400)
         .json({ statusCode: 400, message: "user does not exist" });
@@ -465,12 +564,23 @@ export const UnlikePicTour = async (req, res) => {
 export const getAllLikesByPicTour = async (req, res) => {
   try {
     const { id } = req.params;
-    let likeQuery = `SELECT v.*
+    const { type } = req.query;
+    let likeQuery;
+    if (type === "toptour") {
+      likeQuery = `SELECT v.*
+      FROM top_tours_like v
+      LEFT JOIN users ON v.user_id =users.id
+      WHERE pic_tours_id=$1 AND users.is_deleted=FALSE
+      ORDER BY v.created_at DESC;
+      `;
+    } else {
+      likeQuery = `SELECT v.*
       FROM like_pic v
       LEFT JOIN users ON v.user_id =users.id
       WHERE pic_tours_id=$1 AND users.is_deleted=FALSE
       ORDER BY v.created_at DESC;
       `;
+    }
 
     const { rows } = await pool.query(likeQuery, [id]);
     res.status(200).json({

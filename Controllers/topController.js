@@ -2452,3 +2452,159 @@ export const getTopLetterApp = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const sendTopVideoComment = async (req, res) => {
+  try {
+    const { video_id, user_id, comment } = req.body;
+    const checkQuery1 =
+      "SELECT * FROM users WHERE id = $1 AND is_deleted=FALSE";
+    const checkResult1 = await pool.query(checkQuery1, [user_id]);
+
+    if (checkResult1.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ statusCode: 404, message: "user not exist" });
+    }
+
+    const checkVideoQuery = "SELECT * FROM top_video WHERE id = $1";
+    const checkVideoResult = await pool.query(checkVideoQuery, [video_id]);
+
+    if (checkVideoResult.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ statusCode: 404, message: "video not exist" });
+    }
+
+    const createQuery =
+      "INSERT INTO video_comment (top_video_id, user_id, comment) VALUES($1,$2,$3) RETURNING *";
+    const result = await pool.query(createQuery, [video_id, user_id, comment]);
+    if (result.rowCount === 1) {
+      let commentQuery = `SELECT 
+      v.top_video_id AS top_video_id,
+      v.id AS commentId,
+            v.comment AS comment,
+            u.id AS userId,
+            u.username AS username,
+            u.image AS userImage
+            FROM video_comment v
+            LEFT JOIN users u ON v.user_id = u.id
+            WHERE v.id=$1
+            ORDER BY v.created_at DESC;
+            `;
+      const { rows } = await pool.query(commentQuery, [result.rows[0].id]);
+      return res.status(201).json({
+        statusCode: 201,
+        message: "Comment posted successfully",
+        data: rows[0],
+      });
+    }
+    res.status(400).json({ statusCode: 400, message: "Not uploaded" });
+  } catch (error) {
+    console.error(error);
+    if (error.constraint === "video_comment_user_id_fkey") {
+      return res
+        .status(400)
+        .json({ statusCode: 400, message: "user not found" });
+    } else if (error.constraint === "video_comment_top_video_id_fkey") {
+      return res
+        .status(400)
+        .json({ statusCode: 400, message: "video  not found" });
+    }
+    res.status(500).json({ statusCode: 500, message: "Internal server error" });
+  }
+};
+
+export const getAllTopVideoComments = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let commentQuery = `SELECT v.id AS commentId,
+      v.comment AS comment,
+      u.id AS userId,
+      u.username AS username,
+      u.image AS userImage
+      FROM video_comment v
+      LEFT JOIN users u ON v.user_id = u.id
+      WHERE top_video_id=$1 AND u.is_deleted=FALSE
+      ORDER BY v.created_at DESC;
+      `;
+
+    const { rows } = await pool.query(commentQuery, [id]);
+    res.status(200).json({
+      statusCode: 200,
+      totalComments: rows.length,
+      AllComents: rows,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ statusCode: 500, message: "Internal server error" });
+  }
+};
+
+export const likeUnlikeTopVideo = async (req, res) => {
+  try {
+    const { video_id, user_id } = req.body;
+    console.log(video_id);
+    const checkQuery1 =
+      "SELECT * FROM users WHERE id = $1 AND is_deleted=FALSE";
+    const checkResult1 = await pool.query(checkQuery1, [user_id]);
+
+    if (checkResult1.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ statusCode: 404, message: "user not exist" });
+    }
+
+    const checkVideoQuery = "SELECT * FROM top_video WHERE id = $1";
+    const checkVideoResult = await pool.query(checkVideoQuery, [video_id]);
+
+    if (checkVideoResult.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ statusCode: 404, message: "video not exist" });
+    }
+
+    const checkQuery =
+      "SELECT * FROM top_video_like WHERE video_id = $1 AND user_id = $2";
+    const checkResult = await pool.query(checkQuery, [video_id, user_id]);
+
+    if (checkResult.rowCount > 0) {
+      const deleteQuery =
+        "DELETE FROM top_video_like WHERE video_id = $1 AND user_id = $2";
+      await pool.query(deleteQuery, [video_id, user_id]);
+      const allLikesQuery =
+        "SELECT COUNT(*) AS total FROM top_video_like WHERE video_id = $1";
+      const totalLikes = await pool.query(allLikesQuery, [video_id]);
+      return res.status(200).json({
+        statusCode: 200,
+        message: "Video unliked successfully",
+        totalLikes: parseInt(totalLikes.rows[0].total),
+        isLiked: false,
+      });
+    } else {
+      const createQuery =
+        "INSERT INTO top_video_like (video_id, user_id) VALUES ($1, $2)";
+      await pool.query(createQuery, [video_id, user_id]);
+      const allLikesQuery =
+        "SELECT COUNT(*) AS total FROM top_video_like WHERE video_id = $1";
+      const totalLikes = await pool.query(allLikesQuery, [video_id]);
+      return res.status(201).json({
+        statusCode: 201,
+        message: "Video liked successfully",
+        totalLikes: parseInt(totalLikes.rows[0].total),
+        isLiked: true,
+      });
+    }
+  } catch (error) {
+    console.error("error:", error);
+    if (error.constraint === "top_video_like_user_id_fkey") {
+      return res
+        .status(400)
+        .json({ statusCode: 400, message: "user not found" });
+    } else if (error.constraint === "top_video_like_video_id_fkey") {
+      return res
+        .status(400)
+        .json({ statusCode: 400, message: "video  not found" });
+    }
+    res.status(500).json({ statusCode: 500, message: "Internal server error" });
+  }
+};

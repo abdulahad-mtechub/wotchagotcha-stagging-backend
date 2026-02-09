@@ -282,7 +282,7 @@ export const deleteAllVideos = async (req, res) => {
 };
 export const sendComment = async (req, res) => {
   try {
-    const { video_id, user_id, comment } = req.body;
+    const { video_id, user_id, comment, type } = req.body;
     const checkQuery1 =
       "SELECT * FROM users WHERE id = $1 AND is_deleted=FALSE";
     const checkResult1 = await pool.query(checkQuery1, [user_id]);
@@ -292,12 +292,39 @@ export const sendComment = async (req, res) => {
         .status(404)
         .json({ statusCode: 404, message: "user not exist" });
     }
-    const createQuery =
-      "INSERT INTO video_comment (video_id,user_id,comment) VALUES($1,$2,$3) RETURNING *";
-    const result = await pool.query(createQuery, [video_id, user_id, comment]);
+
+    let result;
+    if (type === "topvideo") {
+      const checkVideoQuery = "SELECT * FROM top_video WHERE id = $1";
+      const checkVideoResult = await pool.query(checkVideoQuery, [video_id]);
+
+      if (checkVideoResult.rowCount === 0) {
+        return res
+          .status(404)
+          .json({ statusCode: 404, message: "video not exist" });
+      }
+
+      const createQuery =
+        "INSERT INTO video_comment (top_video_id,user_id,comment) VALUES($1,$2,$3) RETURNING *";
+      result = await pool.query(createQuery, [video_id, user_id, comment]);
+    } else {
+      const checkVideoQuery = "SELECT * FROM xpi_videos WHERE id = $1";
+      const checkVideoResult = await pool.query(checkVideoQuery, [video_id]);
+
+      if (checkVideoResult.rowCount === 0) {
+        return res
+          .status(404)
+          .json({ statusCode: 404, message: "video not exist" });
+      }
+
+      const createQuery =
+        "INSERT INTO video_comment (video_id,user_id,comment) VALUES($1,$2,$3) RETURNING *";
+      result = await pool.query(createQuery, [video_id, user_id, comment]);
+    }
     if (result.rowCount === 1) {
       let commentQuery = `SELECT 
       v.video_id AS xpi_video_id,
+      v.top_video_id AS top_video_id,
       v.id AS commentId,
             v.comment AS comment,
             u.id AS userId,
@@ -326,6 +353,10 @@ export const sendComment = async (req, res) => {
       return res
         .status(400)
         .json({ statusCode: 400, message: "video  not found" });
+    } else if (error.constraint === "video_comment_top_video_id_fkey") {
+      return res
+        .status(400)
+        .json({ statusCode: 400, message: "video  not found" });
     }
     res.status(500).json({ statusCode: 500, message: "Internal server error" });
   }
@@ -333,7 +364,21 @@ export const sendComment = async (req, res) => {
 export const getAllCommentsByVideo = async (req, res) => {
   try {
     const { id } = req.params;
-    let commentQuery = `SELECT v.id AS commentId,
+    const { type } = req.query;
+    let commentQuery;
+    if (type === "topvideo") {
+      commentQuery = `SELECT v.id AS commentId,
+      v.comment AS comment,
+      u.id AS userId,
+      u.username AS username,
+      u.image AS userImage
+      FROM video_comment v
+      LEFT JOIN users u ON v.user_id = u.id
+      WHERE top_video_id=$1 AND u.is_deleted=FALSE
+      ORDER BY v.created_at DESC;
+      `;
+    } else {
+      commentQuery = `SELECT v.id AS commentId,
       v.comment AS comment,
       u.id AS userId,
       u.username AS username,
@@ -343,6 +388,7 @@ export const getAllCommentsByVideo = async (req, res) => {
       WHERE video_id=$1 AND u.is_deleted=FALSE
       ORDER BY v.created_at DESC;
       `;
+    }
 
     const { rows } = await pool.query(commentQuery, [id]);
     res.status(200).json({
@@ -359,7 +405,7 @@ export const getAllCommentsByVideo = async (req, res) => {
 };
 export const likeUnlikeVideo = async (req, res) => {
   try {
-    const { video_id, user_id } = req.body;
+    const { video_id, user_id, type } = req.body;
     const checkQuery1 =
       "SELECT * FROM users WHERE id = $1 AND is_deleted=FALSE";
     const checkResult1 = await pool.query(checkQuery1, [user_id]);
@@ -371,47 +417,81 @@ export const likeUnlikeVideo = async (req, res) => {
         .json({ statusCode: 404, message: "user not exist" });
     }
 
-    // Check if the user has already liked the video
-    const checkQuery =
-      "SELECT * FROM like_video WHERE video_id = $1 AND user_id = $2";
-    const checkResult = await pool.query(checkQuery, [video_id, user_id]);
+    if (type === "topvideo") {
+      // top video like/unlike
+      const checkVideoQuery = "SELECT * FROM top_video WHERE id = $1";
+      const checkVideoResult = await pool.query(checkVideoQuery, [video_id]);
 
-    if (checkResult.rowCount > 0) {
+      if (checkVideoResult.rowCount === 0) {
+        return res
+          .status(404)
+          .json({ statusCode: 404, message: "video not exist" });
+      }
+
+      const checkQuery =
+        "SELECT * FROM top_video_like WHERE video_id = $1 AND user_id = $2";
+      const checkResult = await pool.query(checkQuery, [video_id, user_id]);
+
+      if (checkResult.rowCount > 0) {
+        const deleteQuery =
+          "DELETE FROM top_video_like WHERE video_id = $1 AND user_id = $2 RETURNING *";
+        const result = await pool.query(deleteQuery, [video_id, user_id]);
+        if (result.rowCount === 1) {
+          return res.status(200).json({
+            statusCode: 200,
+            message: "Video unliked successfully",
+            data: result.rows[0],
+          });
+        }
+      } else {
+        const createQuery =
+          "INSERT INTO top_video_like (video_id,user_id) VALUES($1,$2) RETURNING *";
+        const result = await pool.query(createQuery, [video_id, user_id]);
+        if (result.rowCount === 1) {
+          return res.status(201).json({
+            statusCode: 201,
+            message: "Video liked successfully",
+            data: result.rows[0],
+          });
+        }
+      }
+    } else {
+      // xpi video like/unlike
+      const checkQuery =
+        "SELECT * FROM like_video WHERE video_id = $1 AND user_id = $2";
+      const checkResult = await pool.query(checkQuery, [video_id, user_id]);
+
+      if (checkResult.rowCount > 0) {
+        const deleteQuery =
+          "DELETE FROM like_video WHERE user_id=$1 AND video_id=$2 RETURNING *";
+        const result = await pool.query(deleteQuery, [user_id, video_id]);
+        if (result.rowCount === 1) {
+          return res.status(200).json({
+            statusCode: 201,
+            message: "Video Unlike successfully",
+            data: result.rows[0],
+          });
+        }
+      }
       const createQuery =
-        "DELETE FROM like_video WHERE user_id=$1 AND video_id=$2 RETURNING *";
-      const result = await pool.query(createQuery, [user_id, video_id]);
+        "INSERT INTO like_video  (video_id,user_id) VALUES($1,$2) RETURNING *";
+      const result = await pool.query(createQuery, [video_id, user_id]);
       if (result.rowCount === 1) {
-        return res.status(200).json({
+        return res.status(201).json({
           statusCode: 201,
-          message: "Video Unlike successfully",
+          message: "Video like successfully",
           data: result.rows[0],
         });
       }
-      //   return res
-      //     .status(400)
-      //     .json({
-      //       statusCode: 400,
-      //       message: "User has already liked the pic tour",
-      //     });
-    }
-    const createQuery =
-      "INSERT INTO like_video  (video_id,user_id) VALUES($1,$2) RETURNING *";
-    const result = await pool.query(createQuery, [video_id, user_id]);
-    if (result.rowCount === 1) {
-      return res.status(201).json({
-        statusCode: 201,
-        message: "Video like successfully",
-        data: result.rows[0],
-      });
     }
     res.status(400).json({ statusCode: 400, message: "Not like" });
   } catch (error) {
     console.error(error);
-    if (error.constraint === "like_video_user_id_fkey") {
+    if (error.constraint === "like_video_user_id_fkey" || error.constraint === "top_video_like_user_id_fkey") {
       return res
         .status(400)
         .json({ statusCode: 400, message: "user not found" });
-    } else if (error.constraint === "like_video_video_id_fkey") {
+    } else if (error.constraint === "like_video_video_id_fkey" || error.constraint === "top_video_like_video_id_fkey") {
       return res
         .status(400)
         .json({ statusCode: 400, message: "video  not found" });
@@ -471,14 +551,25 @@ export const UnlikeVideo = async (req, res) => {
 export const getAllLikesByVideo = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(id);
-    let likeQuery = `SELECT v.*
+    const { type } = req.query;
+    let likeQuery;
+    if (type === "topvideo") {
+      likeQuery = `SELECT v.*
+      FROM top_video_like v
+      LEFT JOIN
+      users AS u ON v.user_id = u.id
+      WHERE video_id=$1 AND u.is_deleted=FALSE
+      ORDER BY v.created_at DESC;
+      `;
+    } else {
+      likeQuery = `SELECT v.*
       FROM like_video v
       LEFT JOIN
       users AS u ON v.user_id = u.id
       WHERE video_id=$1 AND u.is_deleted=FALSE
       ORDER BY v.created_at DESC;
       `;
+    }
 
     const { rows } = await pool.query(likeQuery, [id]);
     res.status(200).json({
