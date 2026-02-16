@@ -253,10 +253,15 @@ export const getTopVideoApp = async (req, res) => {
           v.video_category,
           vc.name AS video_category_name,
           v.video,
+          xv.user_id AS user_id,
+          u.username AS username,
+          u.image AS userImage,
           v.created_at AS created_at,
           ROW_NUMBER() OVER (PARTITION BY v.video_category ORDER BY v.created_at DESC) AS row_num
         FROM top_video v
         LEFT JOIN video_category vc ON v.video_category = vc.id
+        LEFT JOIN xpi_videos xv ON xv.video = v.video
+        LEFT JOIN users u ON xv.user_id = u.id
         WHERE v.video_category = $1
       )
       SELECT
@@ -266,6 +271,9 @@ export const getTopVideoApp = async (req, res) => {
         video_category,
         video_category_name,
         video,
+        user_id,
+        username,
+        userImage,
         created_at
       FROM RankedVideos
       WHERE row_num = 1
@@ -1770,10 +1778,15 @@ export const getTopTourApp = async (req, res) => {
         v.pic_category,
         vc.name AS pic_category_name,
         v.image,
+          pt.user_id AS user_id,
+          u.username AS username,
+          u.image AS userImage,
         v.created_at AS created_at,
           ROW_NUMBER() OVER (PARTITION BY v.pic_category ORDER BY v.created_at DESC) AS row_num
         FROM top_tours v
         LEFT JOIN pic_category vc ON v.pic_category = vc.id
+          LEFT JOIN pic_tours pt ON pt.image = v.image
+          LEFT JOIN users u ON pt.user_id = u.id
         WHERE v.pic_category = $1
       )
       SELECT
@@ -1782,6 +1795,9 @@ export const getTopTourApp = async (req, res) => {
         pic_category,
         pic_category_name,
         image,
+          user_id,
+          username,
+          userImage,
         created_at
       FROM RankedVideos
       WHERE row_num = 1;

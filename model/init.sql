@@ -895,3 +895,28 @@ CREATE TABLE IF NOT EXISTS public.alerts(
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Table to store site pages like Terms & Conditions and Privacy Policy
+CREATE TABLE IF NOT EXISTS public.app_pages (
+    id SERIAL PRIMARY KEY,
+    page_key VARCHAR(100) UNIQUE NOT NULL, -- use values like 'terms' or 'policy'
+    content TEXT NOT NULL, -- HTML/text content
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Dedicated table for Terms & Conditions
+CREATE TABLE IF NOT EXISTS public.terms_conditions (
+    id SERIAL PRIMARY KEY,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Dedicated table for Privacy Policy
+CREATE TABLE IF NOT EXISTS public.privacy_policy (
+    id SERIAL PRIMARY KEY,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);

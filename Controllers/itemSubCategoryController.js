@@ -204,6 +204,8 @@ export const getItemSubCategories = async (req, res) => {
             SELECT 
               i.id,
               i.user_id,
+              u.username AS username,
+              u.image AS userImage,
               i.item_category,
               i.title,
               i.description,
@@ -222,8 +224,9 @@ export const getItemSubCategories = async (req, res) => {
               ) AS images
             FROM item i
             LEFT JOIN item_images ii ON i.id = ii.item_id
+            LEFT JOIN users u ON i.user_id = u.id
             WHERE i.item_category = $1 AND i.region = $2
-            GROUP BY i.id, i.user_id, i.item_category, i.title, i.description, i.price, i.condition, i.location, i.region, i.paid_status, i.created_at
+            GROUP BY i.id, i.user_id, u.username, u.image, i.item_category, i.title, i.description, i.price, i.condition, i.location, i.region, i.paid_status, i.created_at
             ORDER BY i.created_at DESC
             LIMIT $3
           `;
