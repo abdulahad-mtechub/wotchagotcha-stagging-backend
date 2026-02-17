@@ -8,6 +8,7 @@ import {
   deletebanner,
   getAllBanners,
   getAllBannersByStatus,
+  getBannersByModule,
   getAllBannersByUser,
   getSpecificBanner,
   searchBanner,
@@ -28,5 +29,6 @@ bannerRoute.delete("/deleteAllBanner", deleteAllBanner)
 bannerRoute.get("/searchBanner", searchBanner)
 
 bannerRoute.get("/getAllBannersByStatus", getAllBannersByStatus)
-bannerRoute.post("/updateBannerStatus", updateBannerStatus)
+bannerRoute.post("/updateBannerStatus", verification, updateBannerStatus)
+bannerRoute.get('/getByModule', getBannersByModule)
 export default bannerRoute;

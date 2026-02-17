@@ -470,7 +470,9 @@ CREATE TABLE IF NOT EXISTS public.banner (
     id SERIAL PRIMARY KEY,
     image VARCHAR(255) NOT NULL,
     user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-    banner_link TEXT NOT NULL,
+    banner_link TEXT,
+    category_table VARCHAR(100) NOT NULL,
+    category_id INT NOT NULL,
     price BIGINT NOT NULL,
     startDate Date NOT NULL,
     endDate Date NOT NULL,
@@ -482,7 +484,7 @@ CREATE TABLE IF NOT EXISTS public.banner (
     CONSTRAINT check_status_type CHECK (status IN ('active', 'inactive')),
     --  CONSTRAINT check_valid_banner_link CHECK (banner_link ~* '^www.[a-zA-Z0-9.-]+.[a-zA-Z]{2,4}.*$'),
     CONSTRAINT check_valid_banner_link CHECK (
-        banner_link::text ~* 'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,255}\.[a-z]{2,9}\y([-a-zA-Z0-9@:%_\+.~#?&//=]*)$'::text
+        banner_link IS NULL OR banner_link::text ~* 'https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,255}\.[a-z]{2,9}\y([-a-zA-Z0-9@:%_\+.~#?&//=]*)$'::text
     ),
     CONSTRAINT check_valid_paid_status CHECK (paid_status IN (true, false))
 );

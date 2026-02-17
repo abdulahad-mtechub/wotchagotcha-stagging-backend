@@ -6,7 +6,9 @@ export const createBanner = async (req, res) => {
   try {
     const {
       user_id,
-      banner_link,
+      banner_link = null,
+      category_table,
+      category_id,
       price,
       startDate,
       endDate,
@@ -27,16 +29,19 @@ export const createBanner = async (req, res) => {
     }
     // if (req.file) {
     // let imagePath = `/bannerImages/${req.file.filename}`;
-    const defaultStatus = status ? status.trim() : "inactive";
-    const createQuery = `INSERT INTO banner (image,banner_link,price,startDate,endDate,status,user_id,paid_status, top_banner) VALUES($1,$2,$3,$4,$5,$6,$7,$8, $9) RETURNING *`;
+    // Normalize banner_link: treat empty or whitespace-only as NULL
+    const createStatus = 'inactive';
+    const normalizedBannerLink = banner_link && String(banner_link).trim() !== '' ? String(banner_link).trim() : null;
+    const createQuery = `INSERT INTO banner (image,banner_link,category_table,category_id,price,startDate,endDate,status,user_id,paid_status, top_banner) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`;
     const result = await pool.query(createQuery, [
-      // imagePath,
       image,
-      banner_link,
+      normalizedBannerLink,
+      category_table,
+      category_id,
       price,
       startDate,
       endDate,
-      status || defaultStatus,
+      createStatus,
       user_id,
       paid_status,
       top_banner,
@@ -295,6 +300,8 @@ export const updateBanner = async (req, res) => {
     const {
       id,
       banner_link,
+      category_table,
+      category_id,
       price,
       startDate,
       endDate,
@@ -346,15 +353,20 @@ export const updateBanner = async (req, res) => {
       ? status.trim()
       : existingBanner.rows[0].status;
 
+    // Determine banner_link for update: if not provided, keep existing; if empty string, set NULL
+    const finalBannerLink = (banner_link === undefined)
+      ? existingBanner.rows[0].banner_link
+      : (String(banner_link).trim() === '' ? null : String(banner_link).trim());
+
     const updateQuery = `
         UPDATE banner
-        SET banner_link = $2, price = $3, startDate = $4, endDate = $5, status = $6,image=$7,paid_status=$8, top_banner = $9
+        SET banner_link = $2, price = $3, startDate = $4, endDate = $5, status = $6,image=$7,paid_status=$8, top_banner = $9, category_table = $10, category_id = $11
         WHERE id = $1
         RETURNING *`;
 
     const result = await pool.query(updateQuery, [
       id,
-      banner_link,
+      finalBannerLink,
       price,
       startDate,
       endDate,
@@ -362,6 +374,8 @@ export const updateBanner = async (req, res) => {
       updateData.image,
       paid_status,
       top_banner,
+      category_table,
+      category_id,
     ]);
 
     if (result.rowCount === 1) {
@@ -604,6 +618,16 @@ export const getAllBannersByStatus = async (req, res) => {
 export const updateBannerStatus = async (req, res) => {
   try {
     const { banner_id, status } = req.body;
+    // Require authenticated user (verification middleware must populate req.user)
+    const requestingUserId = req.user?.userId;
+    if (!requestingUserId) {
+      return res.status(401).json({ statusCode: 401, message: 'Unauthorized' });
+    }
+    // Check if requesting user is admin
+    const userResult = await pool.query('SELECT role FROM users WHERE id=$1', [requestingUserId]);
+    if (userResult.rows.length === 0 || userResult.rows[0].role !== 'admin') {
+      return res.status(403).json({ statusCode: 403, message: 'Forbidden: admin only' });
+    }
 
     if (!banner_id) {
       return res.status(400).json({
@@ -661,5 +685,65 @@ export const updateBannerStatus = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ statusCode: 500, message: "Internal server error" });
+  }
+};
+
+export const getBannersByModule = async (req, res) => {
+  try {
+    const module = req.query.module || req.query.category_table;
+    const id = req.query.id || req.query.module_id || req.query.category_id;
+
+    if (!module || !id) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: 'Missing required query params: module and id',
+      });
+    }
+
+    let page = parseInt(req.query.page || 1);
+    const perPage = parseInt(req.query.limit || 10);
+    const offset = (page - 1) * perPage;
+
+    let baseQuery = `
+      SELECT banner.*, users.username AS user_username, users.image AS user_image
+      FROM banner
+      LEFT JOIN users ON banner.user_id = users.id
+      WHERE banner.category_table = $1
+        AND banner.category_id = $2
+        AND users.is_deleted = FALSE
+        AND banner.status = 'active'
+        AND banner.startDate <= CURRENT_DATE
+        AND banner.endDate >= CURRENT_DATE
+      ORDER BY created_at DESC
+    `;
+
+    const queryParams = [module, id];
+
+    if (req.query.page !== undefined || req.query.limit !== undefined) {
+      baseQuery += ` LIMIT $3 OFFSET $4`;
+      queryParams.push(perPage, offset);
+    }
+
+    const { rows } = await pool.query(baseQuery, queryParams);
+
+    const formatted = rows.map((b) => ({
+      ...b,
+      startdate: moment(b.startdate).format('YYYY-MM-DD'),
+      enddate: moment(b.enddate).format('YYYY-MM-DD'),
+    }));
+
+    if (req.query.page === undefined && req.query.limit === undefined) {
+      return res.status(200).json({ statusCode: 200, totalBanners: rows.length, banners: formatted });
+    }
+
+    const countQuery = `SELECT COUNT(*) AS total FROM public.banner LEFT JOIN users ON banner.user_id = users.id WHERE banner.category_table=$1 AND banner.category_id=$2 AND users.is_deleted = FALSE AND banner.status = 'active' AND banner.startDate <= CURRENT_DATE AND banner.endDate >= CURRENT_DATE`;
+    const totalResult = await pool.query(countQuery, [module, id]);
+    const total = totalResult.rows[0].total;
+    const totalPages = Math.ceil(total / perPage);
+
+    return res.status(200).json({ statusCode: 200, totalBanners: total, totalPages, banners: formatted });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ statusCode: 500, message: 'Internal server error', error });
   }
 };
