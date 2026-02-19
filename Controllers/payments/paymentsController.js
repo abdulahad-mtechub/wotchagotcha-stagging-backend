@@ -125,22 +125,49 @@ export const transferPayment = async (req, res) => {
       );
     }
 
-    // transfer payments
-    await stripeInstance.paymentIntents.create({
+    // create payment intent
+    const intent = await stripeInstance.paymentIntents.create({
       payment_method: paymentMethodId,
       customer: user.customer_id,
-      amount: amount * 100,
+      amount: Math.round(Number(amount) * 100),
       currency: "usd",
       automatic_payment_methods: {
         enabled: true,
       },
     });
 
-    // save the user transaction
-    await saveTransactions(userId, banner_id, amount);
+    // persist into stripe_payments table (single payments table) and update banner.transaction_id
+    try {
+      const rawResponse = JSON.stringify(intent);
+      const providerTransactionId = intent.id || null;
+      const amountCents = intent.amount || Math.round(Number(amount) * 100);
+      const amountDecimal = amountCents ? (Number(amountCents) / 100).toFixed(2) : null;
+      const currency = intent.currency || 'usd';
+      const status = intent.status || null;
+      const payment_method = intent.payment_method || null;
+      const customer_id = intent.customer || user.customer_id || null;
 
-    const message = `Your transaction of ${amount} has been successfully done!`;
+      const insertQuery = `
+        INSERT INTO stripe_payments
+        (user_id, banner_id, stripe_session_id, provider_transaction_id, status, amount_cents, amount_decimal, currency, price_id, product_id, payment_method, customer_id, receipt_url, raw_response, created_at)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,NOW()) RETURNING *
+      `;
+      const receipt_url = intent.charges?.data?.[0]?.receipt_url || null;
+      const insertParams = [userId, banner_id || null, null, providerTransactionId, status, amountCents, amountDecimal, currency, null, null, payment_method, customer_id, receipt_url, rawResponse];
+      await pool.query(insertQuery, insertParams);
 
+      if (banner_id && providerTransactionId) {
+        try {
+            await pool.query(`UPDATE banner SET transaction_id = $1, paid_status = TRUE WHERE id = $2`, [providerTransactionId, banner_id]);
+        } catch (e) {
+          console.warn('Failed to update banner with transaction info for transferPayment:', e.message);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to persist transfer payment:', e.message);
+    }
+
+    const message = `Your transaction of ${amount} has been successfully started`; 
     sendSuccessResponse(res, message);
   } catch (error) {
     console.error("Error in transferring payments", error, error.message);
@@ -216,6 +243,7 @@ export const createCheckoutSession = async (req, res) => {
 export const verifyCheckoutSession = async (req, res) => {
   try {
     const userId = req.user?.userId;
+      const { banner_id } = req.body || {};
     if (!userId) return sendErrorResponse(res, 401, 'AUTH_REQUIRED', 'Authentication required');
 
     const { sessionId, plan_id } = req.body || {};
@@ -238,11 +266,12 @@ export const verifyCheckoutSession = async (req, res) => {
         const rawResponse = JSON.stringify({ free_trial: true });
         const insertQuery = `
           INSERT INTO stripe_payments
-          (user_id, stripe_session_id, provider_transaction_id, status, amount_cents, currency, price_id, product_id, raw_response, created_at)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW()) RETURNING *
+          (user_id, banner_id, stripe_session_id, provider_transaction_id, status, amount_cents, amount_decimal, currency, price_id, product_id, payment_method, customer_id, receipt_url, raw_response, created_at)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,NOW()) RETURNING *
         `;
+        const amountDecimal = 0.00;
         try {
-          const insertResult = await pool.query(insertQuery, [userId, sessionId, sessionId, 'paid', 0, 'usd', null, null, rawResponse]);
+          const insertResult = await pool.query(insertQuery, [userId, banner_id || null, sessionId, sessionId, 'paid', 0, amountDecimal, 'usd', null, null, null, null, null, rawResponse]);
           if (insertResult.rows && insertResult.rows[0]) transaction = insertResult.rows[0];
         } catch (e) {
           console.warn('Failed to insert stripe_payments for free trial:', e.message);
@@ -281,7 +310,10 @@ export const verifyCheckoutSession = async (req, res) => {
         console.warn('Failed to create free trial subscription:', e.message);
       }
 
-      return sendSuccessResponse(res, 'Free trial verified', { transaction, subscription });
+      // Build minimal response for frontend verification
+      // return only status and our DB payment id
+      const paymentId = transaction && transaction.id ? transaction.id : null;
+      return sendSuccessResponse(res, 'Free trial verified', { status: paymentId ? 'paid' : 'not_saved', payment_id: paymentId });
     }
 
     // Retrieve the session and expand objects
@@ -341,12 +373,25 @@ export const verifyCheckoutSession = async (req, res) => {
     }
 
     if (!transaction) {
+      // extract additional main fields for easier querying
+      let payment_method = null;
+      let customer_id = null;
+      let receipt_url = null;
+      try {
+        payment_method = session.payment_intent?.payment_method || session.payment_intent?.payment_method_types?.[0] || null;
+        customer_id = (session.customer && typeof session.customer === 'object') ? session.customer.id : session.customer || null;
+        receipt_url = session.payment_intent?.charges?.data?.[0]?.receipt_url || null;
+      } catch (e) {
+        // ignore extraction errors
+      }
+
       const insertQuery = `
         INSERT INTO stripe_payments
-        (user_id, stripe_session_id, provider_transaction_id, status, amount_cents, currency, price_id, product_id, raw_response, created_at)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,NOW()) RETURNING *
+        (user_id, stripe_session_id, provider_transaction_id, status, amount_cents, amount_decimal, currency, price_id, product_id, payment_method, customer_id, receipt_url, raw_response, created_at)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW()) RETURNING *
       `;
-      const insertParams = [userId, sessionId, providerTransactionId, 'paid', amountCents, currency, priceId, productId, rawResponse];
+      const amountDecimal = amountCents ? (Number(amountCents) / 100).toFixed(2) : null;
+      const insertParams = [userId, sessionId, providerTransactionId, 'paid', amountCents, amountDecimal, currency, priceId, productId, payment_method, customer_id, receipt_url, rawResponse];
       try {
         const insertResult = await pool.query(insertQuery, insertParams);
         if (insertResult.rows && insertResult.rows[0]) transaction = insertResult.rows[0];
@@ -390,7 +435,9 @@ export const verifyCheckoutSession = async (req, res) => {
       }
     }
 
-    return sendSuccessResponse(res, 'Session verified and saved', { transaction, subscription: subscriptionRecord, session });
+    // return only status and our DB payment id
+    const paymentId = transaction && transaction.id ? transaction.id : null;
+    return sendSuccessResponse(res, 'Session verified and saved', { status: paymentId ? 'paid' : 'not_saved', payment_id: paymentId });
   } catch (err) {
     console.error('verifyCheckoutSession error', err);
     return sendErrorResponse(res, 500, 'STRIPE_ERROR', err.message || 'Stripe error');

@@ -2,10 +2,11 @@ import pool from "../db.config/index.js";
 import { getAllRows, getSingleRow } from "../queries/common.js";
 export const createContactUs = async (req, res) => {
   try {
-    const { fullname,email_address,message } = req.body;
+    const { fullname, email_address, message } = req.body;
+    const fullNameSafe = (typeof fullname === 'string' && fullname.trim().length > 0) ? fullname.trim() : 'Anonymous';
     const createQuery =
       "INSERT INTO contact_us (full_name,email_address,message) VALUES ($1,$2,$3) RETURNING *";
-    const result = await pool.query(createQuery, [fullname,email_address,message ]);
+    const result = await pool.query(createQuery, [fullNameSafe, email_address || null, message || null]);
 
     if (result.rowCount === 1) {
       return res.status(201).json({
@@ -99,7 +100,7 @@ export const getAllMessages = async (req, res) => {
       });
     } else {
       // Calculate the total number of categories (without pagination)
-      const totalMessagesQuery = `SELECT COUNT(*) AS total FROM public.disc_category`;
+      const totalMessagesQuery = `SELECT COUNT(*) AS total FROM public.contact_us`;
       const totalCategoryResult = await pool.query(totalMessagesQuery);
       const totalMessages = totalCategoryResult.rows[0].total;
       const totalPages = Math.ceil(totalMessages / perPage);
