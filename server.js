@@ -91,6 +91,7 @@ import gebcSubCategoryRoute from "./routes/gebcSubCategory.js";
 
 import newsCategoryRoute from "./routes/newsCategory.js";
 import newsSubCategoryRoute from "./routes/newsSubCategory.js";
+import indexRoute from "./routes/index.routes.js";
 
 import cron from "node-cron";
 
@@ -106,6 +107,15 @@ app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(express.static(path.join(__dirname, "uploads")));
 app.use(json());
+// Handle invalid JSON errors from body parsers and return a clear message
+app.use((err, req, res, next) => {
+  if (!err) return next();
+  // body-parser sets err.type === 'entity.parse.failed' for parse errors
+  if (err.type === 'entity.parse.failed' || (err instanceof SyntaxError && err.status === 400 && 'body' in err)) {
+    return res.status(400).json({ success: false, message: 'Invalid JSON in request body' });
+  }
+  next(err);
+});
 app.use("/user", userRoute);
 app.use("/app", appCategory);
 app.use("/videoCategory", videoCategoryRoute);
@@ -196,6 +206,7 @@ app.use("/gebc/sub_category", gebcSubCategoryRoute);
 
 app.use("/news/category", newsCategoryRoute);
 app.use("/news/sub_category", newsSubCategoryRoute);
+app.use("/index", indexRoute);
 app.use("/test", (req, res) => {
   res.send("hello");
 });

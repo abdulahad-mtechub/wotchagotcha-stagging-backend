@@ -14,6 +14,7 @@ export const createBanner = async (req, res) => {
       endDate,
       status,
       paid_status,
+      transaction_id,
       image,
       top_banner,
     } = req.body;
@@ -32,7 +33,24 @@ export const createBanner = async (req, res) => {
     // Normalize banner_link: treat empty or whitespace-only as NULL
     const createStatus = 'inactive';
     const normalizedBannerLink = banner_link && String(banner_link).trim() !== '' ? String(banner_link).trim() : null;
-    const createQuery = `INSERT INTO banner (image,banner_link,category_table,category_id,price,startDate,endDate,status,user_id,paid_status, top_banner) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`;
+
+    // If client provided a transaction_id (from stripe_payments.provider_transaction_id),
+    // try to fetch the raw_response and mark the banner paid.
+    let transactionData = null;
+    let finalPaidStatus = paid_status;
+    if (transaction_id) {
+      try {
+        const txRes = await pool.query(`SELECT raw_response FROM stripe_payments WHERE provider_transaction_id = $1 LIMIT 1`, [transaction_id]);
+        if (txRes.rows && txRes.rows[0]) {
+          transactionData = txRes.rows[0].raw_response;
+          finalPaidStatus = true;
+        }
+      } catch (e) {
+        console.warn('Could not lookup stripe_payments for transaction_id:', e.message);
+      }
+    }
+
+    const createQuery = `INSERT INTO banner (image,banner_link,category_table,category_id,price,startDate,endDate,status,user_id,paid_status,transaction_id, top_banner) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`;
     const result = await pool.query(createQuery, [
       image,
       normalizedBannerLink,
@@ -43,7 +61,8 @@ export const createBanner = async (req, res) => {
       endDate,
       createStatus,
       user_id,
-      paid_status,
+      finalPaidStatus,
+      transaction_id || null,
       top_banner,
     ]);
     if (result.rowCount === 1) {
