@@ -553,6 +553,8 @@ CREATE TABLE IF NOT EXISTS public.notification (
     sender_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     receiver_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     type INT REFERENCES notification_type(id) ON DELETE CASCADE NOT NULL,
+    moduletype VARCHAR(255),
+    item_id INT REFERENCES item(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     content TEXT NOT NULL,
     is_read BOOLEAN DEFAULT FALSE,
