@@ -83,7 +83,8 @@ export const bulkUpdateSubCategoryIndex = async (req, res) => {
       return res.status(400).json({ statusCode: 400, message: "items must be a non-empty array" });
     }
 
-    const tableName = `${base}_sub_category`;
+    // DB table for sports uses singular "sport_sub_category" (not "sports_sub_category").
+    const tableName = base === 'sports' ? 'sport_sub_category' : `${base}_sub_category`;
 
     await pool.query("BEGIN");
     let updated = 0;

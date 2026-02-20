@@ -3,15 +3,17 @@ import { getSingleRow } from "../queries/common.js";
 
 export const createNotification = async (req, res) => {
   try {
-    const { sender_id, receiver_id, type, title, content } = req.body;
+    const { sender_id, receiver_id, type, title, content, moduletype, item_id } = req.body;
     const createQuery = `
-        INSERT INTO public.notification (sender_id, receiver_id, type, title, content)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO public.notification (sender_id, receiver_id, type, moduletype, item_id, title, content)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *`;
     const result = await pool.query(createQuery, [
       sender_id,
       receiver_id,
       type,
+      moduletype || null,
+      item_id || null,
       title,
       content,
     ]);
@@ -22,6 +24,8 @@ export const createNotification = async (req, res) => {
           n.id AS notification_id,
           n.title,
           n.content,
+          n.moduletype AS moduletype,
+          n.item_id AS item_id,
           n.is_read,
           n.created_at AS notification_created_at,
           t.name AS notification_type_name,
@@ -80,6 +84,8 @@ export const getAllNotificationsByUser = async (req, res) => {
         n.id AS notification_id,
         n.title,
         n.content,
+        n.moduletype AS moduletype,
+        n.item_id AS item_id,
         n.is_read,
         n.created_at AS notification_created_at,
         t.name AS notification_type_name,
@@ -148,6 +154,8 @@ export const getAllReadNotificationsByUser = async (req, res) => {
         n.id AS notification_id,
         n.title,
         n.content,
+        n.moduletype AS moduletype,
+        n.item_id AS item_id,
         n.is_read,
         n.created_at AS notification_created_at,
         t.name AS notification_type_name,
@@ -318,6 +326,8 @@ export const readNotification = async (req, res) => {
           n.id AS notification_id,
           n.title,
           n.content,
+          n.moduletype AS moduletype,
+          n.item_id AS item_id,
           n.is_read,
           n.created_at AS notification_created_at,
           t.name AS notification_type_name,
