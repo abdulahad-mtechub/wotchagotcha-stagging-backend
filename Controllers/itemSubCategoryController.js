@@ -168,7 +168,7 @@ export const getItemSubCategories = async (req, res) => {
       whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
     // ensure subcategory named 'All others' appears last in the list
-    const query = `SELECT sc.*, json_build_object('name', c.name, 'category_french_name', c.french_name) AS parent_category 
+    const query = `SELECT sc.*, sc."index" AS sub_category_index, json_build_object('name', c.name, 'category_french_name', c.french_name) AS parent_category 
            FROM item_sub_category sc 
            LEFT JOIN item_category c ON sc.category_id = c.id 
            ${whereClause} 

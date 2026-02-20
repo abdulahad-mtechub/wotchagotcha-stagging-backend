@@ -645,6 +645,7 @@ export const getAllQafisByCategory = async (req, res) => {
       v.description,
       v.category AS category_id,
       v.sub_category AS sub_category_id,
+      sc."index" AS sub_category_index,
       v.image,
       v.created_at AS created_at,
       v.user_id,
@@ -674,6 +675,7 @@ export const getAllQafisByCategory = async (req, res) => {
           sub_category_name: qafi.sub_category_name,
           sub_category_french_name: qafi.sub_category_french_name,
           sub_category_id: subCategoryId,
+          sub_category_index: qafi.sub_category_index,
           QAFI_result: {
             totalQAFIs: 0,
             totalPages,

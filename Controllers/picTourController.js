@@ -900,6 +900,7 @@ export const getAllPicTourByCategory = async (req, res) => {
         v.pic_category,
         v.sub_category,
         psc.name AS sub_category_name,
+        psc."index" AS sub_category_index,
         psc.french_name AS sub_category_french_name,
         v.image,
         v.created_at AS tour_created_at,
@@ -932,6 +933,7 @@ export const getAllPicTourByCategory = async (req, res) => {
         acc[subCategoryId] = {
           sub_category_name: subCategoryName,
           sub_category_french_name: subCategoryFrenchName,
+          sub_category_index: row.sub_category_index,
           sub_category_id: subCategoryId,
           tour_result: {
             totalTours: 0,

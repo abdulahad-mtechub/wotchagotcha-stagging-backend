@@ -3,10 +3,125 @@ import { getSingleRow } from "../queries/common.js";
 
 export const createNotification = async (req, res) => {
   try {
-    const { sender_id, receiver_id, type, title, content, moduletype, item_id } = req.body;
+    const { sender_id, receiver_id, type, title, content, moduletype, item_id, action, reference_table, reference_id, is_all_user } = req.body;
+    // validate item_id if provided to avoid FK violations
+    if (item_id !== undefined && item_id !== null) {
+      const parsedItemId = parseInt(item_id);
+      if (Number.isNaN(parsedItemId)) {
+        return res.status(400).json({ statusCode: 400, message: "Invalid item_id" });
+      }
+
+      // Map frontend moduletype values to DB table names
+      const moduletypeToTable = {
+        xpi_videos: "xpi_videos",
+        pic_tours: "pic_tours",
+        item: "item",
+        mondon_market: "item",
+        mondonMarket: "item",
+        sports: "sports",
+        cinematics_videos: "cinematics_videos",
+        fan_star_videos: "fan_star_videos",
+        tv_progmax_videos: "tv_progmax_videos",
+        kid_vids_videos: "kid_vids_videos",
+        learning_hobbies_videos: "learning_hobbies_videos",
+        qafi: "QAFI",
+        QAFI: "QAFI",
+        GEBC: "GEBC",
+        NEWS: "NEWS",
+        top_video: "top_video",
+        top_tours: "top_tours",
+        top_QAFI: "top_QAFI",
+        top_GEBC: "top_GEBC",
+        top_NEWS: "top_NEWS",
+      };
+
+      const allowedTables = new Set([
+        "item",
+        "xpi_videos",
+        "pic_tours",
+        "sports",
+        "cinematics_videos",
+        "fan_star_videos",
+        "tv_progmax_videos",
+        "kid_vids_videos",
+        "learning_hobbies_videos",
+        "QAFI",
+        "GEBC",
+        "NEWS",
+        "top_video",
+        "top_tours",
+        "top_QAFI",
+        "top_GEBC",
+        "top_NEWS",
+      ]);
+
+      let tableName = null;
+      if (moduletype) tableName = moduletypeToTable[moduletype] || moduletype;
+      if (!tableName) tableName = "item"; // default to item
+
+      if (!allowedTables.has(tableName)) {
+        // allow top_ prefixed tables implicitly
+        if (String(tableName).startsWith('top_')) {
+          // allow it through
+        } else {
+          // If unknown moduletype, default to `item` table
+          tableName = "item";
+        }
+      }
+
+      // Validate existence in the chosen table
+      const itemCheck = await pool.query(`SELECT id FROM ${tableName} WHERE id=$1`, [parsedItemId]);
+      if (itemCheck.rowCount === 0) {
+        return res.status(400).json({ statusCode: 400, message: "Item does not exist" });
+      }
+    }
+
+    // validate optional reference (comment id / like id / etc.) if provided
+    if (reference_id !== undefined && reference_id !== null) {
+      const parsedRefId = parseInt(reference_id);
+      if (Number.isNaN(parsedRefId)) {
+        return res.status(400).json({ statusCode: 400, message: "Invalid reference_id" });
+      }
+
+      const allowedRefTables = new Set([
+        'video_comment','pic_comment','mondon_market_comment','sport_comment','qafi_comment','GEBC_comment','NEWS_comment'
+      ]);
+
+      let refTable = reference_table || null;
+      if (!refTable) {
+        // infer from moduletype + action, common case: action=comment -> comment table for moduletype
+        if (action === 'comment' && moduletype) {
+          const map = {
+            xpi_videos: 'video_comment',
+            pic_tours: 'pic_comment',
+            item: 'mondon_market_comment',
+            mondonMarket: 'mondon_market_comment',
+            sports: 'sport_comment',
+            QAFI: 'qafi_comment',
+            GEBC: 'GEBC_comment',
+            NEWS: 'NEWS_comment'
+          };
+          refTable = map[moduletype] || null;
+        }
+      }
+
+      if (!refTable || !allowedRefTables.has(refTable)) {
+        return res.status(400).json({ statusCode: 400, message: 'Invalid or unsupported reference_table' });
+      }
+
+      const refCheck = await pool.query(`SELECT id FROM ${refTable} WHERE id=$1`, [parsedRefId]);
+      if (refCheck.rowCount === 0) {
+        return res.status(400).json({ statusCode: 400, message: 'Referenced record does not exist' });
+      }
+    }
+
+    // validate optional is_all_user flag
+    if (is_all_user !== undefined && typeof is_all_user !== 'boolean') {
+      return res.status(400).json({ statusCode: 400, message: 'Invalid is_all_user value; must be boolean' });
+    }
     const createQuery = `
-        INSERT INTO public.notification (sender_id, receiver_id, type, moduletype, item_id, title, content)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO public.notification (sender_id, receiver_id, type, moduletype, item_id, is_all_user, action, reference_table, reference_id, title, content)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING *`;
     const result = await pool.query(createQuery, [
       sender_id,
@@ -14,6 +129,10 @@ export const createNotification = async (req, res) => {
       type,
       moduletype || null,
       item_id || null,
+      is_all_user === undefined ? false : is_all_user,
+      action || null,
+      reference_table || null,
+      reference_id || null,
       title,
       content,
     ]);
@@ -26,6 +145,10 @@ export const createNotification = async (req, res) => {
           n.content,
           n.moduletype AS moduletype,
           n.item_id AS item_id,
+          n.action AS action,
+          n.reference_table AS reference_table,
+          n.reference_id AS reference_id,
+          n.is_all_user AS is_all_user,
           n.is_read,
           n.created_at AS notification_created_at,
           t.name AS notification_type_name,
@@ -66,6 +189,10 @@ export const createNotification = async (req, res) => {
       res
         .status(400)
         .json({ statusCode: 400, message: "notification type does not exist" });
+    } else if (error.constraint === "notification_item_id_fkey") {
+      res
+        .status(400)
+        .json({ statusCode: 400, message: "Item does not exist" });
     } else {
       res
         .status(500)
