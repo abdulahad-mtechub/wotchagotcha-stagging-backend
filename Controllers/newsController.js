@@ -661,6 +661,7 @@ export const getAllNewsByCategory = async (req, res) => {
       v.description,
       v.category AS category_id,
       v.sub_category AS sub_category_id,
+      sc."index" AS sub_category_index,
       v.image,
       v.created_at AS created_at,
       v.user_id,
@@ -689,6 +690,7 @@ export const getAllNewsByCategory = async (req, res) => {
         acc[subCategoryId] = {
           sub_category_name: news.sub_category_name,
           sub_category_french_name: news.sub_category_french_name,
+          sub_category_index: news.sub_category_index,
           sub_category_id: subCategoryId,
           news_result: {
             totalNews: 0,

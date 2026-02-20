@@ -383,7 +383,7 @@ export const getSubcategoriesWithVideosByCategory = async (req, res) => {
 
     // Get all subcategories for the given category
     const subcategoriesQuery = `
-      SELECT id, name , french_name, created_at
+      SELECT id, name , french_name, created_at, "index" AS sub_category_index
       FROM fan_star_sub_category 
       WHERE category_id = $1
       ORDER BY created_at DESC
@@ -459,6 +459,7 @@ ORDER BY v.created_at DESC
       subcategory.sub_category_name = subcategory.name;
       subcategory.sub_category_french_name = subcategory.french_name;
       subcategory.sub_category_id = subcategory.id;
+      subcategory.sub_category_index = subcategory.sub_category_index;
       subcategory.video_result = {
         totalVideos,
         totalPages,

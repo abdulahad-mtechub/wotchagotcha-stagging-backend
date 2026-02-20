@@ -971,6 +971,7 @@ export const getAllVideosByCategory = async (req, res) => {
     v.sub_category,
     vsc.name AS sub_category_name,
     vsc.french_name AS sub_category_french_name,
+    vsc."index" AS sub_category_index,
     v.video,
     v.thumbnail,
     v.created_at AS video_created_at,
@@ -1005,6 +1006,7 @@ export const getAllVideosByCategory = async (req, res) => {
           sub_category_name: subCategoryName,
           sub_category_french_name: subCategoryFrenchName,
           sub_category_id: subCategoryId,
+          sub_category_index: row.sub_category_index,
 
           video_result: {
             totalVideos: 0,

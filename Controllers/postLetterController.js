@@ -2238,6 +2238,7 @@ export const getAllLettersByCategory = async (req, res) => {
           d.french_name As disc_category_french_name,
           pl.disc_sub_category,
           sc.name AS sub_category_name,
+          sc."index" AS sub_category_index,
           sc.french_name AS sub_category_french_name,
           pl.name,
           pl.address,
@@ -2316,6 +2317,7 @@ export const getAllLettersByCategory = async (req, res) => {
           sub_category_name: curr.sub_category_name,
           sub_category_french_name: curr.sub_category_french_name,
           sub_category_id: curr.disc_sub_category,
+          sub_category_index: curr.sub_category_index,
           total_result: {
             totalLetters: 0,
             totalPages,
