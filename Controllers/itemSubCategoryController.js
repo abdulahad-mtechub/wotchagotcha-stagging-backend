@@ -146,6 +146,19 @@ export const getItemSubCategories = async (req, res) => {
   const sortOrder = req.query.sortOrder || "DESC";
   const offset = (page - 1) * limit;
   const { search, category_id, main_category_id } = req.query;
+  
+  // map allowed client sort keys to safe, fully-qualified columns
+  const sortKey = req.query.sortField || "id";
+  const allowedSortFields = {
+    id: 'sc.id',
+    name: 'sc.name',
+    index: 'sc."index"',
+    sub_category_index: 'sc."index"',
+    created_at: 'sc.created_at',
+    updated_at: 'sc.updated_at',
+    category_name: 'c.name'
+  };
+  const orderField = allowedSortFields[sortKey] || 'sc.id';
   try {
     let queryParams = [];
     let whereClauses = [];
@@ -172,11 +185,15 @@ export const getItemSubCategories = async (req, res) => {
            FROM item_sub_category sc 
            LEFT JOIN item_category c ON sc.category_id = c.id 
            ${whereClause} 
-           ORDER BY (CASE WHEN TRIM(LOWER(sc.name)) = 'all others' THEN 1 ELSE 0 END) ASC, ${sortField} ${sortOrder} 
+           ORDER BY (CASE WHEN TRIM(LOWER(sc.name)) = 'all others' THEN 1 ELSE 0 END) ASC, ${orderField} ${sortOrder} 
            LIMIT $${queryParams.length + 1} 
            OFFSET $${queryParams.length + 2}`;
 
     queryParams.push(limit, offset);
+
+    // debug: log final query and params to inspect ORDER BY
+    console.error('DEBUG itemSubCategory query:', query);
+    console.error('DEBUG itemSubCategory params:', queryParams);
 
     const { rows, rowCount } = await pool.query(query, queryParams);
 
@@ -225,12 +242,12 @@ export const getItemSubCategories = async (req, res) => {
             FROM item i
             LEFT JOIN item_images ii ON i.id = ii.item_id
             LEFT JOIN users u ON i.user_id = u.id
-            WHERE i.item_category = $1 AND i.region = $2
+            WHERE i.item_category = $1 AND i.sub_category = $2
             GROUP BY i.id, i.user_id, u.username, u.image, i.item_category, i.title, i.description, i.price, i.condition, i.location, i.region, i.paid_status, i.created_at
             ORDER BY i.created_at DESC
             LIMIT $3
           `;
-          const itemsRes = await pool.query(itemsQ, [r.category_id, r.name, itemLimit]);
+          const itemsRes = await pool.query(itemsQ, [r.category_id, r.id, itemLimit]);
           r.items = itemsRes.rows;
           r.items_count = itemsRes.rowCount;
         } catch (err) {

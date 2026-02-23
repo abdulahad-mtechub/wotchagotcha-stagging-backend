@@ -395,7 +395,7 @@ export const getSubcategoriesWithVideosByCategory = async (req, res) => {
 
     // Get all subcategories for the given category
     const subcategoriesQuery = `
-      SELECT id, name, NULL AS french_name, created_at
+      SELECT id, name, french_name, "index", created_at
       FROM cinematics_sub_category 
       WHERE category_id = $1
       ORDER BY created_at DESC
@@ -471,6 +471,8 @@ ORDER BY v.created_at DESC
       subcategory.sub_category_name = subcategory.name;
       subcategory.sub_category_french_name = subcategory.french_name;
       subcategory.sub_category_id = subcategory.id;
+      // include subcategory index if present
+      subcategory.sub_category_index = typeof subcategory.index !== 'undefined' ? subcategory.index : null;
       subcategory.video_result = {
         totalVideos,
         totalPages,
@@ -481,6 +483,7 @@ ORDER BY v.created_at DESC
       delete subcategory.name;
       delete subcategory.id;
       delete subcategory.french_name;
+      delete subcategory.index;
     }
 
     return res.status(200).json({

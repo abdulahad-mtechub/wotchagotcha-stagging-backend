@@ -2278,7 +2278,7 @@ export const getAllLettersByCategory = async (req, res) => {
 
           WHERE pl.disc_category = $1
           GROUP BY
-          pl.id, pl.user_id, pl.post_type, pl.receiver_type, pl.disc_category,sc.name, pl.name, pl.address,
+          pl.id, pl.user_id, pl.post_type, pl.receiver_type, pl.disc_category, sc.name, sc."index", pl.name, pl.address,
           pl.email, pl.contact_no, pl.subject_place, pl.post_date, pl.greetings, pl.introduction,
           pl.body, pl.form_of_appeal, pl.video, pl.signature_id, pl.paid_status, 
           lru.username,lru.image,

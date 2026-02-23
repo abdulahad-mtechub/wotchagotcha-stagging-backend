@@ -7,6 +7,7 @@ export const createItem = async (req, res) => {
     const {
       user_id,
       item_category,
+      sub_category,
       title,
       images,
       description,
@@ -34,11 +35,12 @@ export const createItem = async (req, res) => {
     //   return res.status(400).json({ error: req.fileValidationError });
     // }
     // const images = req.files.map((file) => `/itemImages/${file.filename}`);
-    const createQuery = `INSERT INTO item (user_id,item_category, title, description, price,condition,location,paid_status,region) 
-        VALUES ($1, $2, $3, $4,$5,$6,$7,$8,$9) RETURNING *`;
+    const createQuery = `INSERT INTO item (user_id,item_category, sub_category, title, description, price,condition,location,paid_status,region) 
+        VALUES ($1, $2, $3, $4, $5,$6,$7,$8,$9,$10) RETURNING *`;
     const result = await pool.query(createQuery, [
       user_id,
       item_category,
+      sub_category || null,
       title,
       description,
       price,
@@ -89,11 +91,13 @@ export const createItem = async (req, res) => {
         LEFT JOIN item_images ii ON item.id = ii.item_id
         LEFT JOIN users u ON item.user_id = u.id
         LEFT JOIN item_category ic ON item.item_category = ic.id
+        LEFT JOIN item_sub_category isc ON item.sub_category = isc.id
         WHERE item.id = $1
         GROUP BY
           item.id,
           item.user_id,
           item.item_category,
+          item.sub_category,
           item.title,
           item.description,
           item.price,
@@ -141,6 +145,7 @@ export const updateItem = async (req, res) => {
     const {
       item_id,
       item_category,
+      sub_category,
       title,
       description,
       price,
@@ -197,9 +202,10 @@ export const updateItem = async (req, res) => {
       }
     }
 
-    const updateProduct = `UPDATE item SET item_category=$1,title=$2,description=$3,price=$4,condition=$5,location=$6,region=$7,paid_status=$8, "updated_at"=NOW() WHERE id=$9 RETURNING *`;
+    const updateProduct = `UPDATE item SET item_category=$1, sub_category=$2, title=$3,description=$4,price=$5,condition=$6,location=$7,region=$8,paid_status=$9, "updated_at"=NOW() WHERE id=$10 RETURNING *`;
     const result = await pool.query(updateProduct, [
       item_category,
+      sub_category || null,
       title,
       description,
       price,
@@ -211,13 +217,15 @@ export const updateItem = async (req, res) => {
     ]);
     if (result.rowCount === 1) {
       const getQuery = `
-          SELECT
+            SELECT
               item.id,
               item.user_id,
               u.username AS username,
               u.image AS userImage,
               item.item_category,
+              item.sub_category,
               ic.name AS item_category_name,
+              isc.name AS item_sub_category_name,
               item.title,
               item.region,
               item.description,
@@ -227,20 +235,22 @@ export const updateItem = async (req, res) => {
               item.top_post,
               item.paid_status,
               COALESCE(ARRAY_AGG(
-                  JSONB_BUILD_OBJECT(
-                      'id', ii.id,
-                      'image', ii.image
-                  )
+                JSONB_BUILD_OBJECT(
+                  'id', ii.id,
+                  'image', ii.image
+                )
               ), ARRAY[]::JSONB[]) AS images
-          FROM item
-          LEFT JOIN item_images ii ON item.id = ii.item_id
-          LEFT JOIN users u ON item.user_id = u.id
-          LEFT JOIN item_category ic ON item.item_category = ic.id
-          WHERE item.id = $1
-          GROUP BY
+            FROM item
+            LEFT JOIN item_images ii ON item.id = ii.item_id
+            LEFT JOIN users u ON item.user_id = u.id
+            LEFT JOIN item_category ic ON item.item_category = ic.id
+            LEFT JOIN item_sub_category isc ON item.sub_category = isc.id
+            WHERE item.id = $1
+            GROUP BY
               item.id,
               item.user_id,
               item.item_category,
+              item.sub_category,
               item.title,
               item.description,
               item.price,
@@ -250,7 +260,8 @@ export const updateItem = async (req, res) => {
               item.paid_status,
               u.username,
               u.image,
-              ic.name;
+              ic.name,
+              isc.name;
       `;
 
       const getData = await pool.query(getQuery, [item_id]);

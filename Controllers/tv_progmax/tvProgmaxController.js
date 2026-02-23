@@ -382,9 +382,9 @@ export const getSubcategoriesWithVideosByCategory = async (req, res) => {
         .json({ statusCode: 404, message: "Category not found" });
     }
 
-    // Get all subcategories for the given category
+    // Get all subcategories for the given category (include optional index)
     const subcategoriesQuery = `
-      SELECT id, name , french_name
+      SELECT id, name, french_name, "index"
       FROM tv_progmax_sub_category 
       WHERE category_id = $1
       ORDER BY created_at DESC
@@ -460,6 +460,7 @@ ORDER BY v.created_at DESC
       subcategory.sub_category_name = subcategory.name;
       subcategory.sub_category_french_name = subcategory.french_name;
       subcategory.sub_category_id = subcategory.id;
+      subcategory.sub_category_index = typeof subcategory.index !== 'undefined' ? subcategory.index : null;
       subcategory.video_result = {
         totalVideos,
         totalPages,
@@ -470,6 +471,7 @@ ORDER BY v.created_at DESC
       delete subcategory.name;
       delete subcategory.id;
       delete subcategory.french_name;
+      delete subcategory.index;
     }
 
     // Ensure subcategories are ordered by their newest video's created_at (DESC)
