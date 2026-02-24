@@ -92,6 +92,7 @@ import gebcSubCategoryRoute from "./routes/gebcSubCategory.js";
 import newsCategoryRoute from "./routes/newsCategory.js";
 import newsSubCategoryRoute from "./routes/newsSubCategory.js";
 import indexRoute from "./routes/index.routes.js";
+import reportedUserRoute from "./routes/reportedUser.routes.js";
 
 import cron from "node-cron";
 
@@ -207,6 +208,7 @@ app.use("/gebc/sub_category", gebcSubCategoryRoute);
 app.use("/news/category", newsCategoryRoute);
 app.use("/news/sub_category", newsSubCategoryRoute);
 app.use("/index", indexRoute);
+app.use("/reported_user", reportedUserRoute);
 app.use("/test", (req, res) => {
   res.send("hello");
 });
