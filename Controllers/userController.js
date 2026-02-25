@@ -63,6 +63,12 @@ export const login = async (req, res) => {
         block: rows[0].block,
         image: rows[0].image,
         device_id: deviceId || rows[0].device_id,
+        city: rows[0].city,
+        country: rows[0].country,
+        province: rows[0].province,
+        profession: rows[0].profession,
+        state: rows[0].state,
+        region: rows[0].region,
         created_at: rows[0].created_at,
         updated_at: rows[0].updated_at,
       },
@@ -75,8 +81,9 @@ export const login = async (req, res) => {
 
 export const register = async (req, res) => {
   try {
-    const { email, username, password, confirmPassword, role, device_id } =
+    const { email, username, password, confirmPassword, role, device_id, city, country, province, profession, state, region, image } =
       req.body;
+      console.log("iamge",image)
     if (password !== confirmPassword) {
       return res.status(401).json({
         statusCode: 401,
@@ -99,14 +106,25 @@ export const register = async (req, res) => {
       }
     }
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Save image value provided by frontend directly (no Cloudinary upload)
+    const imageUrl = image || null;
+
     const insertUserQuery =
-      "INSERT INTO users (email, password,role,username,device_id) VALUES ($1, $2,$3,$4,$5) RETURNING *";
+      "INSERT INTO users (email, password, role, username, device_id, image, city, country, province, profession, state, region) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *";
     const newUserResult = await pool.query(insertUserQuery, [
       email,
       hashedPassword,
       role,
       username,
       device_id,
+      imageUrl,
+      city || null,
+      country || null,
+      province || null,
+      profession || null,
+      state || null,
+      region || null,
     ]);
     const userId = newUserResult.rows[0].id;
     await pool.query("COMMIT"); // Commit the transaction
@@ -124,6 +142,13 @@ export const register = async (req, res) => {
         is_deleted: newUserResult.rows[0].is_deleted,
         device_id: newUserResult.rows[0].device_id,
         email: newUserResult.rows[0].email,
+        image: newUserResult.rows[0].image,
+        city: newUserResult.rows[0].city,
+        country: newUserResult.rows[0].country,
+        province: newUserResult.rows[0].province,
+        profession: newUserResult.rows[0].profession,
+        state: newUserResult.rows[0].state,
+        region: newUserResult.rows[0].region,
         created_at: newUserResult.rows[0].created_at,
         updated_at: newUserResult.rows[0].updated_at,
       },
@@ -410,6 +435,12 @@ export const getSpecificUser = async (req, res) => {
         email: rows[0].email,
         block: rows[0].block,
         image: rows[0].image,
+        city: rows[0].city,
+        country: rows[0].country,
+        province: rows[0].province,
+        profession: rows[0].profession,
+        state: rows[0].state,
+        region: rows[0].region,
         created_at: rows[0].created_at,
         updated_at: rows[0].updated_at,
       },
