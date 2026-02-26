@@ -885,7 +885,7 @@ export const getAllPicTourByCategory = async (req, res) => {
     const countQuery = `
       SELECT COUNT(*) FROM pic_tours v 
       JOIN users u ON v.user_id = u.id
-      WHERE v.pic_category = $1 AND u.is_deleted = FALSE;
+      WHERE v.pic_category = $1 AND u.is_deleted = FALSE AND v.status != 'blocked';
     `;
     const countResult = await pool.query(countQuery, [id]);
     const totalTours = parseInt(countResult.rows[0].count);
@@ -916,7 +916,7 @@ export const getAllPicTourByCategory = async (req, res) => {
       FROM pic_tours v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN pic_sub_category psc ON v.sub_category = psc.id
-      WHERE v.pic_category = $1 AND u.is_deleted = FALSE
+      WHERE v.pic_category = $1 AND u.is_deleted = FALSE AND v.status != 'blocked'
       ORDER BY v.created_at DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -963,7 +963,7 @@ export const getAllPicTourByCategory = async (req, res) => {
     }, {});
 
     let data = Object.values(groupedBySubCategory);
-    
+
     // Sort subcategories by the newest tour's created_at (DESC)
     data.sort((a, b) => {
       const aNewest = new Date(a.tour_result.Tours[0]?.created_at || 0);

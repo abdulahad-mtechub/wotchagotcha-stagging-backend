@@ -204,13 +204,13 @@ export const deleteVideo = async (req, res) => {
 };
 
 export const deleteAllVideos = async (req, res) => {
-          // validate required foreign keys and fields before DB insert
-          if (!user_id || !category_id || !sub_category_id) {
-            return res.status(400).json({
-              statusCode: 400,
-              message: 'Missing required fields: user_id, category_id and sub_category_id are required',
-            });
-          }
+  // validate required foreign keys and fields before DB insert
+  if (!user_id || !category_id || !sub_category_id) {
+    return res.status(400).json({
+      statusCode: 400,
+      message: 'Missing required fields: user_id, category_id and sub_category_id are required',
+    });
+  }
   try {
     const deleteQuery = "DELETE FROM cinematics_videos  RETURNING *";
     const result = await pool.query(deleteQuery);
@@ -432,7 +432,7 @@ FROM cinematics_videos v
 LEFT JOIN users u ON v.user_id = u.id
 LEFT JOIN cinematics_video_comment c ON v.id = c.video_id
 LEFT JOIN cinematics_video_like l ON v.id = l.video_id
-WHERE v.sub_category_id = $1
+WHERE v.sub_category_id = $1 AND v.status != 'blocked'
 GROUP BY v.id, u.username, u.image
 ORDER BY v.created_at DESC
 
@@ -449,7 +449,7 @@ ORDER BY v.created_at DESC
           specificOffset,
         ]);
 
-        countQuery = `SELECT COUNT(*) FROM cinematics_videos WHERE sub_category_id = $1`;
+        countQuery = `SELECT COUNT(*) FROM cinematics_videos WHERE sub_category_id = $1 AND status != 'blocked'`;
         totalVideosResult = await pool.query(countQuery, [subcategory.id]);
         totalVideos = totalVideosResult.rows[0].count;
         totalPages = Math.ceil(totalVideos / specificLimit);
@@ -462,7 +462,7 @@ ORDER BY v.created_at DESC
           0,
         ]);
 
-        countQuery = `SELECT COUNT(*) FROM cinematics_videos WHERE sub_category_id = $1`;
+        countQuery = `SELECT COUNT(*) FROM cinematics_videos WHERE sub_category_id = $1 AND status != 'blocked'`;
         totalVideosResult = await pool.query(countQuery, [subcategory.id]);
         totalVideos = totalVideosResult.rows[0].count;
         totalPages = Math.ceil(totalVideos / defaultLimit);

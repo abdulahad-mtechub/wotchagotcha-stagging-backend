@@ -426,7 +426,7 @@ FROM learning_hobbies_videos v
 LEFT JOIN users u ON v.user_id = u.id
 LEFT JOIN learning_hobbies_video_comment c ON v.id = c.video_id
 LEFT JOIN learning_hobbies_video_like l ON v.id = l.video_id
-WHERE v.sub_category_id = $1
+WHERE v.sub_category_id = $1 AND v.status != 'blocked'
 GROUP BY v.id, u.username, u.image
 ORDER BY v.created_at DESC
 
@@ -443,7 +443,7 @@ ORDER BY v.created_at DESC
           specificOffset,
         ]);
 
-        countQuery = `SELECT COUNT(*) FROM learning_hobbies_videos WHERE sub_category_id = $1`;
+        countQuery = `SELECT COUNT(*) FROM learning_hobbies_videos WHERE sub_category_id = $1 AND status != 'blocked'`;
         totalVideosResult = await pool.query(countQuery, [subcategory.id]);
         totalVideos = totalVideosResult.rows[0].count;
         totalPages = Math.ceil(totalVideos / specificLimit);
@@ -456,7 +456,7 @@ ORDER BY v.created_at DESC
           0,
         ]);
 
-        countQuery = `SELECT COUNT(*) FROM learning_hobbies_videos WHERE sub_category_id = $1`;
+        countQuery = `SELECT COUNT(*) FROM learning_hobbies_videos WHERE sub_category_id = $1 AND status != 'blocked'`;
         totalVideosResult = await pool.query(countQuery, [subcategory.id]);
         totalVideos = totalVideosResult.rows[0].count;
         totalPages = Math.ceil(totalVideos / defaultLimit);

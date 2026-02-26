@@ -639,7 +639,7 @@ export const getAllGEBCsByCategory = async (req, res) => {
     const offset = (page - 1) * perPage;
 
     // Count total GEBCs in the given category
-    const countQuery = `SELECT COUNT(*) FROM GEBC WHERE category = $1;`;
+    const countQuery = `SELECT COUNT(*) FROM GEBC WHERE category = $1 AND status != 'blocked';`;
     const countResult = await pool.query(countQuery, [id]);
     const totalGEBCs = parseInt(countResult.rows[0].count);
     const totalPages = Math.ceil(totalGEBCs / perPage);
@@ -666,7 +666,7 @@ export const getAllGEBCsByCategory = async (req, res) => {
     JOIN users u ON v.user_id = u.id
     LEFT JOIN GEBC_category c ON v.category = c.id
     LEFT JOIN GEBC_sub_category sc ON v.sub_category = sc.id
-    WHERE v.category = $1 AND u.is_deleted=FALSE
+    WHERE v.category = $1 AND u.is_deleted=FALSE AND v.status != 'blocked'
     ORDER BY v.created_at DESC
     LIMIT $2 OFFSET $3;`;
 

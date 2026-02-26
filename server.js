@@ -93,6 +93,8 @@ import newsCategoryRoute from "./routes/newsCategory.js";
 import newsSubCategoryRoute from "./routes/newsSubCategory.js";
 import indexRoute from "./routes/index.routes.js";
 import reportedUserRoute from "./routes/reportedUser.routes.js";
+import itemReportRoute from "./routes/itemReport.routes.js";
+import followerRoute from "./routes/follower.routes.js";
 
 import cron from "node-cron";
 
@@ -209,6 +211,8 @@ app.use("/news/category", newsCategoryRoute);
 app.use("/news/sub_category", newsSubCategoryRoute);
 app.use("/index", indexRoute);
 app.use("/reported_user", reportedUserRoute);
+app.use("/itemReport", itemReportRoute);
+app.use("/follower", followerRoute);
 app.use("/test", (req, res) => {
   res.send("hello");
 });

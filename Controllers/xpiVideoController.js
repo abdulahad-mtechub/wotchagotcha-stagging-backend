@@ -954,7 +954,7 @@ export const getAllVideosByCategory = async (req, res) => {
     const countQuery = `
       SELECT COUNT(*) FROM xpi_videos
       LEFT JOIN users AS u ON xpi_videos.user_id = u.id
-      WHERE video_category = $1 AND u.is_deleted = FALSE;
+      WHERE video_category = $1 AND u.is_deleted = FALSE AND status != 'blocked';
     `;
     const countResult = await pool.query(countQuery, [id]);
     const totalVideos = parseInt(countResult.rows[0].count);
@@ -988,7 +988,7 @@ export const getAllVideosByCategory = async (req, res) => {
   JOIN users u ON v.user_id = u.id
   LEFT JOIN video_category vc ON v.video_category = vc.id
   LEFT JOIN video_sub_category vsc ON v.sub_category = vsc.id
-  WHERE v.video_category = $1 AND u.is_deleted = FALSE
+  WHERE v.video_category = $1 AND u.is_deleted = FALSE AND v.status != 'blocked'
   ORDER BY v.created_at DESC
   LIMIT $2 OFFSET $3;
 `;
@@ -1037,7 +1037,7 @@ export const getAllVideosByCategory = async (req, res) => {
     }, {});
 
     let data = Object.values(groupedBySubCategory);
-    
+
     // Sort subcategories by the newest video's created_at (DESC)
     data.sort((a, b) => {
       const aNewest = new Date(a.video_result.Videos[0]?.created_at || 0);

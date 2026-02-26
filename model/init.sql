@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS public.xpi_videos (
     sub_category INT REFERENCES video_sub_category(id) ON DELETE CASCADE NOT NULL,
     video TEXT NOT NULL,
     thumbnail TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'active',
     -- top BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -155,6 +156,7 @@ description TEXT NOT NULL,
 pic_category INT REFERENCES pic_category(id) ON DELETE CASCADE NOT NULL,
 sub_category INT REFERENCES pic_sub_category(id) ON DELETE CASCADE NOT NULL,
 image VARCHAR(255) NOT NULL,
+status VARCHAR(50) DEFAULT 'active',
 created_at TIMESTAMPTZ DEFAULT NOW(),
 updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -213,6 +215,7 @@ CREATE TABLE IF NOT EXISTS public.QAFI (
     category INT REFERENCES QAFI_category(id) ON DELETE CASCADE NOT NULL,
     sub_category INT REFERENCES QAFI_sub_category(id) ON DELETE CASCADE NOT NULL,
     image VARCHAR(255) NOT NULL,
+    status VARCHAR(50) DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -265,6 +268,7 @@ CREATE TABLE IF NOT EXISTS public.GEBC (
     category INT REFERENCES GEBC_category(id) ON DELETE CASCADE NOT NULL,
     sub_category INT REFERENCES GEBC_sub_category(id) ON DELETE CASCADE NOT NULL,
     image VARCHAR(255) NOT NULL,
+    status VARCHAR(50) DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -317,6 +321,7 @@ CREATE TABLE IF NOT EXISTS public.NEWS (
     category INT REFERENCES NEWS_category(id) ON DELETE CASCADE NOT NULL,
     sub_category INT REFERENCES NEWS_sub_category(id) ON DELETE CASCADE NOT NULL,
     image VARCHAR(255) NOT NULL,
+    status VARCHAR(50) DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -374,6 +379,7 @@ CREATE TABLE IF NOT EXISTS public.post_letters (
     paid_status BOOLEAN NOT NULL,
     top_letter BOOLEAN DEFAULT FALSE,
     top_added_date TIMESTAMPTZ,
+    status VARCHAR(50) DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW() CONSTRAINT check_paid_status CHECK (paid_status = (post_type = 'private')),
     CONSTRAINT check_receiver_type CHECK (
@@ -427,6 +433,7 @@ CREATE TABLE IF NOT EXISTS public.item (
     top_post BOOLEAN NOT NULL DEFAULT FALSE,
     top_added_date TIMESTAMPTZ,
     paid_status BOOLEAN NOT NULL,
+    status VARCHAR(50) DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT check_condition_type CHECK (
@@ -590,6 +597,7 @@ CREATE TABLE IF NOT EXISTS public.cinematics_videos (
     sub_category_id INT REFERENCES cinematics_sub_category(id) ON DELETE CASCADE NOT NULL,
     video TEXT NOT NULL,
     thumbnail TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -641,6 +649,7 @@ CREATE TABLE IF NOT EXISTS public.fan_star_videos (
     sub_category_id INT REFERENCES fan_star_sub_category(id) ON DELETE CASCADE NOT NULL,
     video TEXT NOT NULL,
     thumbnail TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -692,6 +701,7 @@ CREATE TABLE IF NOT EXISTS public.tv_progmax_videos (
     sub_category_id INT REFERENCES tv_progmax_sub_category(id) ON DELETE CASCADE NOT NULL,
     video TEXT NOT NULL,
     thumbnail TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -743,6 +753,7 @@ CREATE TABLE IF NOT EXISTS public.kid_vids_videos (
     sub_category_id INT REFERENCES kid_vids_sub_category(id) ON DELETE CASCADE NOT NULL,
     video TEXT NOT NULL,
     thumbnail TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -794,6 +805,7 @@ CREATE TABLE IF NOT EXISTS public.learning_hobbies_videos (
     sub_category_id INT REFERENCES learning_hobbies_sub_category(id) ON DELETE CASCADE NOT NULL,
     video TEXT NOT NULL,
     thumbnail TEXT NOT NULL,
+    status VARCHAR(50) DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -867,6 +879,7 @@ CREATE TABLE IF NOT EXISTS public.sports (
     category_id INT REFERENCES sports_category(id) ON DELETE CASCADE NOT NULL,
     sub_category_id INT REFERENCES sport_sub_category(id) ON DELETE CASCADE NOT NULL,
     image TEXT NOT NULL, 
+    status VARCHAR(50) DEFAULT 'active',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -927,4 +940,27 @@ CREATE TABLE IF NOT EXISTS public.privacy_policy (
     content TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ─── Item Report (user reports content/items to admin) ─────────────────────
+CREATE TABLE IF NOT EXISTS public.item_report (
+    id                 SERIAL PRIMARY KEY,
+    module_type        VARCHAR(100) NOT NULL,
+    item_id            INT NOT NULL,
+    status             VARCHAR(50) NOT NULL DEFAULT 'pending'
+                         CHECK (status IN ('pending', 'blocked', 'rejected')),
+    reason             TEXT NOT NULL,
+    reporter_user_id   INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    reported_user_id   INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    created_at         TIMESTAMPTZ DEFAULT NOW(),
+    updated_at         TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Follow table to track user follows
+CREATE TABLE IF NOT EXISTS public.follow (
+    id SERIAL PRIMARY KEY,
+    follower_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    following_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT unique_follow UNIQUE (follower_id, following_id)
 );

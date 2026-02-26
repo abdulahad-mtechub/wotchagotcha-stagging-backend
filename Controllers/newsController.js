@@ -650,7 +650,7 @@ export const getAllNewsByCategory = async (req, res) => {
     const offset = (page - 1) * perPage;
 
     // Count total news in the given category
-    const countQuery = `SELECT COUNT(*) FROM NEWS WHERE category=$1;`;
+    const countQuery = `SELECT COUNT(*) FROM NEWS WHERE category=$1 AND status != 'blocked';`;
     const countResult = await pool.query(countQuery, [id]);
     const totalNews = parseInt(countResult.rows[0].count);
     const totalPages = Math.ceil(totalNews / perPage);
@@ -677,7 +677,7 @@ export const getAllNewsByCategory = async (req, res) => {
     JOIN users u ON v.user_id = u.id
     LEFT JOIN NEWS_category c ON v.category = c.id
     LEFT JOIN NEWS_sub_category sc ON v.sub_category = sc.id
-    WHERE v.category = $1 AND u.is_deleted=FALSE
+    WHERE v.category = $1 AND u.is_deleted=FALSE AND v.status != 'blocked'
     ORDER BY v.created_at DESC
     LIMIT $2 OFFSET $3;`;
 
@@ -721,7 +721,7 @@ export const getAllNewsByCategory = async (req, res) => {
 
     // Convert grouped news into an array format
     let responseData = Object.values(groupedNews);
-    
+
     // Sort subcategories by the newest news item's created_at (DESC)
     responseData.sort((a, b) => {
       const aNewest = new Date(a.news_result.News[0]?.created_at || 0);
