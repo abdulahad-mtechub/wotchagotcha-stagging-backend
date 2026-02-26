@@ -3,7 +3,7 @@ import { getAllRows, getSingleRow } from "../queries/common.js";
 import { handle_delete_photos_from_folder } from "../utils/handleDeletePhoto.js";
 export const createQafi = async (req, res) => {
   try {
-    const { description, category, sub_category, user_id, image } = req.body;
+    const { description, category, sub_category, user_id, image, video } = req.body;
     const checkQuery1 =
       "SELECT * FROM users WHERE id = $1 AND is_deleted = FALSE";
     const checkResult1 = await pool.query(checkQuery1, [user_id]);
@@ -39,12 +39,13 @@ export const createQafi = async (req, res) => {
     }
 
     const createQuery =
-      "INSERT INTO QAFI (description, category, sub_category, image, user_id) VALUES($1, $2, $3, $4, $5) RETURNING *";
+      "INSERT INTO QAFI (description, category, sub_category, image, video, user_id) VALUES($1, $2, $3, $4, $5, $6) RETURNING *";
     const result = await pool.query(createQuery, [
       description,
       category,
       sub_category,
       image,
+      video,
       user_id,
     ]);
 
@@ -56,6 +57,7 @@ export const createQafi = async (req, res) => {
           v.category,
           v.sub_category,
           v.image,
+          v.video,
           v.created_at AS tour_created_at,
           v.user_id,
           u.username AS username,
@@ -127,7 +129,7 @@ export const deleteQafi = async (req, res) => {
 };
 export const updateQafi = async (req, res) => {
   try {
-    const { id, description, category, sub_category, image } = req.body;
+    const { id, description, category, sub_category, image, video } = req.body;
     const condition = {
       column: "id",
       value: id,
@@ -141,19 +143,26 @@ export const updateQafi = async (req, res) => {
     }
     let updateData = {
       image: oldImage[0].image,
+      video: oldImage[0].video,
     };
     if (image) {
       updateData.image = image;
       const imageSplit = oldImage[0].image.replace("/fileUpload/", "");
       handle_delete_photos_from_folder([imageSplit], "fileUpload");
     }
+    if (video) {
+      updateData.video = video;
+      const videoSplit = (oldImage[0].video || "").replace("/fileUpload/", "");
+      if (videoSplit) handle_delete_photos_from_folder([videoSplit], "fileUpload");
+    }
 
-    const updateType = `UPDATE qafi SET description=$1, category=$2, sub_category=$3, image=$4, "updated_at"=NOW() WHERE id=$5 RETURNING *`;
+    const updateType = `UPDATE qafi SET description=$1, category=$2, sub_category=$3, image=$4, video=$5, "updated_at"=NOW() WHERE id=$6 RETURNING *`;
     const result = await pool.query(updateType, [
       description,
       category,
       sub_category,
       updateData.image,
+      updateData.video,
       id,
     ]);
     if (result.rowCount === 1) {
@@ -164,6 +173,7 @@ export const updateQafi = async (req, res) => {
           v.category,
           v.sub_category,
           v.image,
+          v.video,
           v.created_at AS tour_created_at,
           v.user_id,
           u.username AS username,
@@ -297,6 +307,7 @@ export const getAllCommentsByQAFI = async (req, res) => {
       q.category AS category_id,
       q.sub_category AS sub_category_id,
       q.image AS qafi_image,
+      q.video AS qafi_video,
       q.created_at AS qafi_created_at,
       q.user_id AS qafi_user_id,
       c.name AS category_name,
@@ -405,6 +416,7 @@ export const getAllLikesByQafi = async (req, res) => {
         q.category AS category_id,
         q.sub_category AS sub_category_id,
         q.image AS qafi_image,
+        q.video AS qafi_video,
         q.created_at AS qafi_created_at,
         q.user_id AS qafi_user_id,
         u.username AS qafi_username,
@@ -442,6 +454,7 @@ export const getSpecificQafi = async (req, res) => {
     v.description,
     v.disc_category,
     v.image,
+    v.video,
     v.created_at AS tour_created_at,
     v.user_id,
     u.username AS username,
@@ -503,6 +516,7 @@ export const getAllQAFIs = async (req, res) => {
       v.category AS category_id,
       v.sub_category AS sub_category_id,
       v.image,
+      v.video,
       v.created_at AS tour_created_at,
       v.user_id,
       u.username AS username,
@@ -510,7 +524,7 @@ export const getAllQAFIs = async (req, res) => {
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
-      sc.french_name AS sub_category_french_name,
+      sc.french_name AS sub_category_french_name
     FROM qafi v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN QAFI_category c ON v.category = c.id
@@ -587,6 +601,7 @@ export const getAllQafisByUser = async (req, res) => {
       v.category AS category_id,
       v.sub_category AS sub_category_id,
       v.image,
+      v.video,
       v.created_at AS tour_created_at,
       v.user_id,
       u.username AS username,
@@ -634,7 +649,7 @@ export const getAllQafisByCategory = async (req, res) => {
     const offset = (page - 1) * perPage;
 
     // Count total QAFIs in the given category
-    const countQuery = `SELECT COUNT(*) FROM QAFI WHERE category = $1;`;
+    const countQuery = `SELECT COUNT(*) FROM QAFI WHERE category = $1 AND status != 'blocked';`;
     const countResult = await pool.query(countQuery, [id]);
     const totalQAFIs = parseInt(countResult.rows[0].count);
     const totalPages = Math.ceil(totalQAFIs / perPage);
@@ -647,6 +662,7 @@ export const getAllQafisByCategory = async (req, res) => {
       v.sub_category AS sub_category_id,
       sc."index" AS sub_category_index,
       v.image,
+      v.video,
       v.created_at AS created_at,
       v.user_id,
       u.username AS username,
@@ -661,7 +677,7 @@ export const getAllQafisByCategory = async (req, res) => {
     JOIN users u ON v.user_id = u.id
     LEFT JOIN QAFI_category c ON v.category = c.id
     LEFT JOIN QAFI_sub_category sc ON v.sub_category = sc.id
-    WHERE v.category = $1 AND u.is_deleted = FALSE
+    WHERE v.category = $1 AND u.is_deleted = FALSE AND v.status != 'blocked'
     ORDER BY v.created_at DESC
     LIMIT $2 OFFSET $3;`;
 
@@ -690,6 +706,7 @@ export const getAllQafisByCategory = async (req, res) => {
         name: qafi.category_name,
         description: qafi.description,
         image: qafi.image,
+        video: qafi.video,
         user_id: qafi.user_id,
         username: qafi.username,
         user_image: qafi.user_image,
@@ -724,6 +741,7 @@ export const getTopQafiWithMostComments = async (req, res) => {
         q.id AS qafi_id,
         q.description,
         q.image,
+        q.video,
         qc.name AS category_name,
         qsc.name AS sub_category_name,
         q.user_id,
@@ -784,6 +802,7 @@ export const searchQafi = async (req, res) => {
       v.category AS category_id,
       v.sub_category AS sub_category_id,
       v.image,
+      v.video,
       v.created_at AS tour_created_at,
       v.user_id,
       u.username AS username,

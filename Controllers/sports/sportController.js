@@ -422,7 +422,7 @@ FROM sports v
 LEFT JOIN users u ON v.user_id = u.id
 LEFT JOIN sport_comment c ON v.id = c.sport_id
 LEFT JOIN sport_like l ON v.id = l.sport_id
-WHERE v.sub_category_id = $1
+WHERE v.sub_category_id = $1 AND v.status != 'blocked'
 GROUP BY v.id, u.username, u.image
 ORDER BY v.created_at DESC
 
@@ -439,7 +439,7 @@ ORDER BY v.created_at DESC
           specificOffset,
         ]);
 
-        countQuery = `SELECT COUNT(*) FROM sports WHERE sub_category_id = $1`;
+        countQuery = `SELECT COUNT(*) FROM sports WHERE sub_category_id = $1 AND status != 'blocked'`;
         totalsportsResult = await pool.query(countQuery, [subcategory.id]);
         totalSports = totalsportsResult.rows[0].count;
         totalPages = Math.ceil(totalSports / specificLimit);
@@ -452,7 +452,7 @@ ORDER BY v.created_at DESC
           0,
         ]);
 
-        countQuery = `SELECT COUNT(*) FROM sports WHERE sub_category_id = $1`;
+        countQuery = `SELECT COUNT(*) FROM sports WHERE sub_category_id = $1 AND status != 'blocked'`;
         totalsportsResult = await pool.query(countQuery, [subcategory.id]);
         totalSports = totalsportsResult.rows[0].count;
         totalPages = Math.ceil(totalSports / defaultLimit);

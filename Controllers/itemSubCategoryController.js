@@ -146,7 +146,7 @@ export const getItemSubCategories = async (req, res) => {
   const sortOrder = req.query.sortOrder || "DESC";
   const offset = (page - 1) * limit;
   const { search, category_id, main_category_id } = req.query;
-  
+
   // map allowed client sort keys to safe, fully-qualified columns
   const sortKey = req.query.sortField || "id";
   const allowedSortFields = {
@@ -242,7 +242,7 @@ export const getItemSubCategories = async (req, res) => {
             FROM item i
             LEFT JOIN item_images ii ON i.id = ii.item_id
             LEFT JOIN users u ON i.user_id = u.id
-            WHERE i.item_category = $1 AND i.sub_category = $2
+            WHERE i.item_category = $1 AND i.sub_category = $2 AND i.status != 'blocked'
             GROUP BY i.id, i.user_id, u.username, u.image, i.item_category, i.title, i.description, i.price, i.condition, i.location, i.region, i.paid_status, i.created_at
             ORDER BY i.created_at DESC
             LIMIT $3
