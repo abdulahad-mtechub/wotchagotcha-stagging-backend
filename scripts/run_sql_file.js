@@ -1,29 +1,22 @@
-import fs from 'fs';
-import pool from '../db.config/index.js';
+import fs from "fs";
+import pool from "../db.config/index.js";
 
-async function run() {
-  try {
-    const sql = fs.readFileSync('scripts/seed_gebc_emtao.sql', 'utf8');
-    console.log('Executing SQL script...');
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      await client.query(sql);
-      await client.query('COMMIT');
-      console.log('SQL script executed successfully.');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      console.error('Error executing SQL script:', err.stack || err.message || err);
-      process.exitCode = 1;
-    } finally {
-      client.release();
-      // allow pool to drain
-      await pool.end();
+const fileArg = process.argv[2] || "migrations/make_categories_nullable.sql";
+
+try {
+  const sql = fs.readFileSync(fileArg, "utf8");
+  console.log(`Applying SQL file: ${fileArg}`);
+  pool.query(sql, (err, result) => {
+    if (!err) {
+      console.log("SQL executed successfully");
+      process.exit(0);
+    } else {
+      console.error("SQL execution failed:");
+      console.error(err.stack || err);
+      process.exit(1);
     }
-  } catch (err) {
-    console.error('Failed to read/execute SQL file:', err.stack || err.message || err);
-    process.exitCode = 1;
-  }
+  });
+} catch (err) {
+  console.error(`Failed to read file ${fileArg}:`, err.message || err);
+  process.exit(2);
 }
-
-run();

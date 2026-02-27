@@ -7,11 +7,22 @@ export const createXpiVideo = async (req, res) => {
       name,
       description,
       video_category,
+      category_id,
+      category,
+      main_category_id,
       sub_category,
+      sub_category_id,
       user_id,
       video,
       thumbnail,
+      shared_post_id,
     } = req.body;
+    let videoCategoryVal = video_category || category_id || category || main_category_id || null;
+    let subCategoryVal = sub_category || sub_category_id || null;
+
+    // Category and subcategory validation removed to allow cross-module sharing.
+    // Constraints on xpi_videos have been relaxed to support IDs from other modules.
+
 
     // Check if the user exists and is not deleted
     const checkUserQuery =
@@ -25,18 +36,21 @@ export const createXpiVideo = async (req, res) => {
     }
 
     // Insert new video record
+    // shared_post_id may refer to posts from other tables; DB constraint removed so we accept the value as-is
+
     const createQuery = `
-      INSERT INTO xpi_videos (name, description, video_category, sub_category, video, user_id, thumbnail) 
-      VALUES($1, $2, $3, $4, $5, $6, $7) 
+      INSERT INTO xpi_videos (name, description, video_category, sub_category, video, user_id, thumbnail, shared_post_id) 
+      VALUES($1, $2, $3, $4, $5, $6, $7, $8) 
       RETURNING *`;
     const result = await pool.query(createQuery, [
-      name,
-      description,
-      video_category,
-      sub_category,
-      video,
+      name || "",
+      description || "",
+      videoCategoryVal,
+      subCategoryVal,
+      video || "",
       user_id,
-      thumbnail,
+      thumbnail || "",
+      shared_post_id || null,
     ]);
 
     if (result.rowCount === 1) {
@@ -183,17 +197,8 @@ export const updateXpiVideo = async (req, res) => {
         .json({ statusCode: 404, message: "Xpi video not found" });
     }
 
-    // Check if the sub_category exists
-    const checkSubCategoryQuery =
-      "SELECT * FROM video_sub_category WHERE id = $1";
-    const checkSubCategoryResult = await pool.query(checkSubCategoryQuery, [
-      sub_category,
-    ]);
-    if (checkSubCategoryResult.rowCount === 0) {
-      return res
-        .status(400)
-        .json({ statusCode: 400, message: "Sub category not found" });
-    }
+    // Subcategory validation removed to support cross-module sharing.
+
 
     const updateQuery = `
       UPDATE xpi_videos 
@@ -938,23 +943,17 @@ export const getAllVideosByUser = async (req, res) => {
 export const getAllVideosByCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const checkQuery = "SELECT * FROM video_category WHERE id = $1";
-    const checkResult = await pool.query(checkQuery, [id]);
-
-    if (checkResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Video Category does not exist" });
-    }
 
     let page = parseInt(req.query.page || 1); // Get the page number from the query parameters
     const perPage = parseInt(req.query.limit || 10);
     const offset = (page - 1) * perPage;
 
     const countQuery = `
-      SELECT COUNT(*) FROM xpi_videos
-      LEFT JOIN users AS u ON xpi_videos.user_id = u.id
-      WHERE video_category = $1 AND u.is_deleted = FALSE AND status != 'blocked';
+      SELECT COUNT(*) FROM xpi_videos v
+      LEFT JOIN users AS u ON v.user_id = u.id
+      LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
+      WHERE (v.video_category = $1 OR (v.shared_post_id IS NOT NULL AND orig.video_category = $1))
+        AND u.is_deleted = FALSE AND v.status != 'blocked';
     `;
     const countResult = await pool.query(countQuery, [id]);
     const totalVideos = parseInt(countResult.rows[0].count);
@@ -972,10 +971,14 @@ export const getAllVideosByCategory = async (req, res) => {
     vsc.name AS sub_category_name,
     vsc.french_name AS sub_category_french_name,
     vsc."index" AS sub_category_index,
+    orig_vsc.name AS original_sub_category_name,
+    orig_vsc.french_name AS original_sub_category_french_name,
+    orig_vsc."index" AS original_sub_category_index,
     v.video,
     v.thumbnail,
     v.created_at AS video_created_at,
     v.user_id,
+    v.shared_post_id,
     u.username AS username, 
     u.image AS user_image,  
     (
@@ -983,12 +986,28 @@ export const getAllVideosByCategory = async (req, res) => {
     ) AS comment_count,
     (
       SELECT COUNT(*) FROM like_video lv WHERE lv.video_id = v.id
-    ) AS total_likes
+    ) AS total_likes,
+    -- Original post details
+    orig.name AS original_name,
+    orig.description AS original_description,
+    orig.video AS original_video,
+    orig.thumbnail AS original_thumbnail,
+    orig.sub_category AS original_sub_category_id,
+    orig_vsc.name AS original_sub_category_name,
+    orig_vsc.french_name AS original_sub_category_french_name,
+    orig_vsc."index" AS original_sub_category_index,
+    orig_u.username AS original_username,
+    orig_u.image AS original_user_image,
+    orig.created_at AS original_created_at
   FROM xpi_videos v
   JOIN users u ON v.user_id = u.id
   LEFT JOIN video_category vc ON v.video_category = vc.id
   LEFT JOIN video_sub_category vsc ON v.sub_category = vsc.id
-  WHERE v.video_category = $1 AND u.is_deleted = FALSE AND v.status != 'blocked'
+  LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
+  LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+  LEFT JOIN video_sub_category orig_vsc ON orig.sub_category = orig_vsc.id
+  WHERE (v.video_category = $1 OR (v.shared_post_id IS NOT NULL AND orig.video_category = $1))
+    AND u.is_deleted = FALSE AND v.status != 'blocked'
   ORDER BY v.created_at DESC
   LIMIT $2 OFFSET $3;
 `;
@@ -997,16 +1016,17 @@ export const getAllVideosByCategory = async (req, res) => {
 
     // Group videos by subcategory
     const groupedBySubCategory = rows.reduce((acc, row) => {
-      const subCategoryName = row.sub_category_name || "Uncategorized";
-      const subCategoryFrenchName = row.sub_category_french_name;
-      const subCategoryId = row.sub_category || null;
+      const subCategoryId = row.sub_category || row.original_sub_category_id || null;
+      const subCategoryName = row.sub_category_name || row.original_sub_category_name || "Uncategorized";
+      const subCategoryFrenchName = row.sub_category_french_name || row.original_sub_category_french_name || null;
+      const subCategoryIndex = row.sub_category_index || row.original_sub_category_index || null;
 
       if (!acc[subCategoryId]) {
         acc[subCategoryId] = {
           sub_category_name: subCategoryName,
           sub_category_french_name: subCategoryFrenchName,
           sub_category_id: subCategoryId,
-          sub_category_index: row.sub_category_index,
+          sub_category_index: subCategoryIndex,
 
           video_result: {
             totalVideos: 0,
@@ -1029,6 +1049,16 @@ export const getAllVideosByCategory = async (req, res) => {
         created_at: row.video_created_at,
         comment_count: row.comment_count,
         total_likes: row.total_likes,
+        shared_post_id: row.shared_post_id,
+        original_post: row.shared_post_id ? {
+          name: row.original_name,
+          description: row.original_description,
+          video: row.original_video,
+          thumbnail: row.original_thumbnail,
+          username: row.original_username,
+          user_image: row.original_user_image,
+          created_at: row.original_created_at
+        } : null
       });
 
       acc[subCategoryId].video_result.totalVideos += 1;
@@ -1059,14 +1089,6 @@ export const getAllVideosByCategory = async (req, res) => {
 export const getMostViewedVideosByCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const checkQuery = "SELECT * FROM video_category WHERE id = $1";
-    const checkResult = await pool.query(checkQuery, [id]);
-
-    if (checkResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Video Category does not exist" });
-    }
 
     const page = parseInt(req.query.page || 1); // Get the page number from the query parameters
     const perPage = parseInt(req.query.limit || 10); // Number of results per page
@@ -1156,14 +1178,6 @@ export const getMostViewedVideosByCategory = async (req, res) => {
 export const getAllTrendingVideosByCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const checkQuery = "SELECT * FROM video_category WHERE id = $1";
-    const checkResult = await pool.query(checkQuery, [id]);
-
-    if (checkResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Video Category not exist" });
-    }
     const page = parseInt(req.query.page || 1); // Get the page number from the query parameters
     const perPage = parseInt(req.query.limit || 10); // Number of results per page
 
@@ -1220,14 +1234,6 @@ export const getAllTrendingVideosByCategory = async (req, res) => {
 export const getAllRecentVideosByCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const checkQuery = "SELECT * FROM video_category WHERE id = $1";
-    const checkResult = await pool.query(checkQuery, [id]);
-
-    if (checkResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Video Category not exist" });
-    }
     const page = parseInt(req.query.page || 1); // Get the page number from the query parameters
     const perPage = parseInt(req.query.limit || 10); // Number of results per page
 
@@ -1281,14 +1287,6 @@ export const getAllRecentVideosByCategory = async (req, res) => {
 export const getComentedVideos = async (req, res) => {
   try {
     const { id } = req.params;
-    const checkQuery = "SELECT * FROM video_category WHERE id = $1";
-    const checkResult = await pool.query(checkQuery, [id]);
-
-    if (checkResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Video Category does not exist" });
-    }
 
     const page = parseInt(req.query.page || 1); // Get the page number from the query parameters
     const perPage = parseInt(req.query.limit || 10); // Number of results per page

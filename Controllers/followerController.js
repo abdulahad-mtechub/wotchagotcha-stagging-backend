@@ -54,6 +54,13 @@ export const getFollowers = async (req, res) => {
         if (isNaN(limit) || limit < 1) limit = 20;
         const offset = (page - 1) * limit;
 
+        // Support separate pagination for the 'following' list if provided
+        let followingPage = parseInt(req.query.following_page || req.query.page || 1);
+        let followingLimit = parseInt(req.query.following_limit || req.query.limit || 20);
+        if (isNaN(followingPage) || followingPage < 1) followingPage = 1;
+        if (isNaN(followingLimit) || followingLimit < 1) followingLimit = 20;
+        const followingOffset = (followingPage - 1) * followingLimit;
+
         const followersCountQuery = `SELECT COUNT(*) FROM follow WHERE following_id = $1`;
         const followingCountQuery = `SELECT COUNT(*) FROM follow WHERE follower_id = $1`;
 
@@ -65,7 +72,7 @@ export const getFollowers = async (req, res) => {
         const totalFollowers = parseInt(followersResult.rows[0].count);
         const totalFollowing = parseInt(followingResult.rows[0].count);
 
-        const dataQuery = `
+        const followersQuery = `
             SELECT 
                 f.id as follow_id,
                 f.created_at as follow_date,
@@ -79,13 +86,33 @@ export const getFollowers = async (req, res) => {
             LIMIT $2 OFFSET $3
         `;
 
-        const { rows } = await pool.query(dataQuery, [id, limit, offset]);
+        const followingQuery = `
+            SELECT 
+                f.id as follow_id,
+                f.created_at as follow_date,
+                u.id as user_id,
+                u.username,
+                u.image
+            FROM follow f
+            JOIN users u ON f.following_id = u.id
+            WHERE f.follower_id = $1
+            ORDER BY f.created_at DESC
+            LIMIT $2 OFFSET $3
+        `;
+
+        const [followersRows, followingRows] = await Promise.all([
+            pool.query(followersQuery, [id, limit, offset]),
+            pool.query(followingQuery, [id, followingLimit, followingOffset])
+        ]);
 
         return res.status(200).json({
             statusCode: 200,
-            data: rows,
+            followers: followersRows.rows,
+            following: followingRows.rows,
             page,
             limit,
+            followingPage,
+            followingLimit,
             totalFollowers,
             totalFollowing
         });

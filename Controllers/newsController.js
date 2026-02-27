@@ -3,36 +3,8 @@ import { getAllRows, getSingleRow } from "../queries/common.js";
 import { handle_delete_photos_from_folder } from "../utils/handleDeletePhoto.js";
 export const createNews = async (req, res) => {
   try {
-    const { description, category, sub_category, user_id, image } = req.body;
+    const { description, category, sub_category, user_id, image, shared_post_id } = req.body;
 
-    // Check if the category exists
-    const categoryCheckQuery = "SELECT * FROM public.NEWS_category WHERE id=$1";
-    const categoryCheckResult = await pool.query(categoryCheckQuery, [
-      category,
-    ]);
-
-    if (categoryCheckResult.rowCount === 0) {
-      return res.status(404).json({
-        statusCode: 404,
-        message: "Category does not exist",
-      });
-    }
-
-    // Check if the sub-category exists
-    const subCategoryCheckQuery =
-      "SELECT * FROM public.NEWS_sub_category WHERE id=$1 AND category_id=$2";
-    const subCategoryCheckResult = await pool.query(subCategoryCheckQuery, [
-      sub_category,
-      category,
-    ]);
-
-    if (subCategoryCheckResult.rowCount === 0) {
-      return res.status(404).json({
-        statusCode: 404,
-        message:
-          "Sub-category does not exist or does not belong to the category",
-      });
-    }
 
     // Check if the user exists
     const userCheckQuery =
@@ -47,13 +19,14 @@ export const createNews = async (req, res) => {
     }
 
     const createQuery =
-      "INSERT INTO NEWS (description, category, sub_category, image, user_id) VALUES($1, $2, $3, $4, $5) RETURNING *";
+      "INSERT INTO NEWS (description, category, sub_category, image, user_id, shared_post_id) VALUES($1, $2, $3, $4, $5, $6) RETURNING *";
     const result = await pool.query(createQuery, [
-      description,
+      description || "",
       category,
       sub_category,
-      image,
+      image || "",
       user_id,
+      shared_post_id || null,
     ]);
 
     if (result.rowCount === 1) {
@@ -145,31 +118,6 @@ export const updateNews = async (req, res) => {
         .json({ statusCode: 404, message: "NEWS not found" });
     }
 
-    // Check if the category exists
-    const categoryCheckQuery = "SELECT * FROM public.NEWS_category WHERE id=$1";
-    const categoryCheckResult = await pool.query(categoryCheckQuery, [
-      category,
-    ]);
-
-    if (categoryCheckResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Category not exist" });
-    }
-
-    // Check if the sub-category exists
-    const subCategoryCheckQuery =
-      "SELECT * FROM public.NEWS_sub_category WHERE id=$1 AND category_id=$2";
-    const subCategoryCheckResult = await pool.query(subCategoryCheckQuery, [
-      sub_category,
-      category,
-    ]);
-
-    if (subCategoryCheckResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Category not exist" });
-    }
 
     let updateData = {
       image: oldImage[0].image,
@@ -650,7 +598,12 @@ export const getAllNewsByCategory = async (req, res) => {
     const offset = (page - 1) * perPage;
 
     // Count total news in the given category
-    const countQuery = `SELECT COUNT(*) FROM NEWS WHERE category=$1 AND status != 'blocked';`;
+    const countQuery = `
+      SELECT COUNT(*) FROM NEWS v
+      LEFT JOIN NEWS orig ON v.shared_post_id = orig.id
+      WHERE (v.category = $1 OR (v.shared_post_id IS NOT NULL AND orig.category = $1))
+        AND v.status != 'blocked';
+    `;
     const countResult = await pool.query(countQuery, [id]);
     const totalNews = parseInt(countResult.rows[0].count);
     const totalPages = Math.ceil(totalNews / perPage);
@@ -662,9 +615,14 @@ export const getAllNewsByCategory = async (req, res) => {
       v.category AS category_id,
       v.sub_category AS sub_category_id,
       sc."index" AS sub_category_index,
+      orig.sub_category AS original_sub_category_id,
+      orig_sc.name AS original_sub_category_name,
+      orig_sc.french_name AS original_sub_category_french_name,
+      orig_sc."index" AS original_sub_category_index,
       v.image,
       v.created_at AS created_at,
       v.user_id,
+      v.shared_post_id,
       u.username AS username,
       u.image AS user_image,
       c.name AS category_name,
@@ -672,12 +630,26 @@ export const getAllNewsByCategory = async (req, res) => {
       c.french_name AS category_french_name,
       sc.french_name AS sub_category_french_name,
       (SELECT COUNT(*) FROM NEWS_comment WHERE NEWS_comment.NEWS_id = v.id) AS comment_count,
-      (SELECT COUNT(*) FROM like_NEWS WHERE like_NEWS.NEWS_id = v.id) AS total_likes
+      (SELECT COUNT(*) FROM like_NEWS WHERE like_NEWS.NEWS_id = v.id) AS total_likes,
+      -- Original post details
+      orig.description AS original_description,
+      orig.image AS original_image,
+      orig.sub_category AS original_sub_category_id,
+      orig_sc.name AS original_sub_category_name,
+      orig_sc.french_name AS original_sub_category_french_name,
+      orig_sc."index" AS original_sub_category_index,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at
     FROM NEWS v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN NEWS_category c ON v.category = c.id
     LEFT JOIN NEWS_sub_category sc ON v.sub_category = sc.id
-    WHERE v.category = $1 AND u.is_deleted=FALSE AND v.status != 'blocked'
+    LEFT JOIN NEWS orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+    LEFT JOIN NEWS_sub_category orig_sc ON orig.sub_category = orig_sc.id
+    WHERE (v.category = $1 OR (v.shared_post_id IS NOT NULL AND orig.category = $1))
+      AND u.is_deleted=FALSE AND v.status != 'blocked'
     ORDER BY v.created_at DESC
     LIMIT $2 OFFSET $3;`;
 
@@ -685,12 +657,16 @@ export const getAllNewsByCategory = async (req, res) => {
 
     // Group news by sub_category
     const groupedNews = rows.reduce((acc, news) => {
-      const subCategoryId = news.sub_category_id;
+      const subCategoryId = news.sub_category_id || news.original_sub_category_id || null;
+      const subCategoryName = news.sub_category_name || news.original_sub_category_name || null;
+      const subCategoryFrenchName = news.sub_category_french_name || news.original_sub_category_french_name || null;
+      const subCategoryIndex = news.sub_category_index || news.original_sub_category_index || null;
+
       if (!acc[subCategoryId]) {
         acc[subCategoryId] = {
-          sub_category_name: news.sub_category_name,
-          sub_category_french_name: news.sub_category_french_name,
-          sub_category_index: news.sub_category_index,
+          sub_category_name: subCategoryName,
+          sub_category_french_name: subCategoryFrenchName,
+          sub_category_index: subCategoryIndex,
           sub_category_id: subCategoryId,
           news_result: {
             totalNews: 0,
@@ -712,6 +688,18 @@ export const getAllNewsByCategory = async (req, res) => {
         created_at: news.created_at,
         comment_count: news.comment_count,
         total_likes: news.total_likes,
+        shared_post_id: news.shared_post_id,
+        original_post: news.shared_post_id
+          ? {
+            description: news.original_description,
+            image: news.original_image,
+            username: news.original_username,
+            user_image: news.original_user_image,
+            created_at: news.original_created_at,
+            sub_category_id: news.original_sub_category_id,
+            sub_category_name: news.original_sub_category_name,
+          }
+          : null,
       });
 
       acc[subCategoryId].news_result.totalNews++;

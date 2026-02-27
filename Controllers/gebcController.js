@@ -3,7 +3,9 @@ import { getAllRows, getSingleRow } from "../queries/common.js";
 import { handle_delete_photos_from_folder } from "../utils/handleDeletePhoto.js";
 export const createGEBC = async (req, res) => {
   try {
-    const { description, category, sub_category, user_id, image } = req.body;
+    const { description, category, category_id, main_category_id, sub_category, sub_category_id, user_id, image, shared_post_id } = req.body;
+    const categoryVal = category_id || category || main_category_id || null;
+    const subCategoryVal = sub_category_id || sub_category || null;
 
     // Check if the user exists
     const userCheckQuery =
@@ -17,43 +19,16 @@ export const createGEBC = async (req, res) => {
       });
     }
 
-    // Check if the category exists
-    const categoryCheckQuery = "SELECT * FROM public.GEBC_category WHERE id=$1";
-    const categoryCheckResult = await pool.query(categoryCheckQuery, [
-      category,
-    ]);
-
-    if (categoryCheckResult.rowCount === 0) {
-      return res.status(400).json({
-        statusCode: 400,
-        message: "Category does not exist",
-      });
-    }
-
-    // Check if the sub-category exists
-    const subCategoryCheckQuery =
-      "SELECT * FROM public.GEBC_sub_category WHERE id=$1 AND category_id=$2";
-    const subCategoryCheckResult = await pool.query(subCategoryCheckQuery, [
-      sub_category,
-      category,
-    ]);
-
-    if (subCategoryCheckResult.rowCount === 0) {
-      return res.status(400).json({
-        statusCode: 400,
-        message:
-          "Sub-category does not exist or does not belong to the category",
-      });
-    }
 
     const createQuery =
-      "INSERT INTO GEBC (description, category, sub_category, image, user_id) VALUES($1, $2, $3, $4, $5) RETURNING *";
+      "INSERT INTO GEBC (description, category, sub_category, image, user_id, shared_post_id) VALUES($1, $2, $3, $4, $5, $6) RETURNING *";
     const result = await pool.query(createQuery, [
-      description,
-      category,
-      sub_category,
-      image,
+      description || "",
+      categoryVal,
+      subCategoryVal,
+      image || "",
       user_id,
+      shared_post_id || null,
     ]);
 
     if (result.rowCount === 1) {
@@ -624,22 +599,18 @@ export const getAllGEBCsByCategory = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if the category exists
-    const checkQuery = "SELECT * FROM GEBC_category WHERE id = $1";
-    const checkResult = await pool.query(checkQuery, [id]);
-
-    if (checkResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Category does not exist" });
-    }
 
     const page = parseInt(req.query.page || 1); // Get the page number from the query parameters
     const perPage = parseInt(req.query.limit || 5); // Number of results per page
     const offset = (page - 1) * perPage;
 
     // Count total GEBCs in the given category
-    const countQuery = `SELECT COUNT(*) FROM GEBC WHERE category = $1 AND status != 'blocked';`;
+    const countQuery = `
+      SELECT COUNT(*) FROM GEBC v
+      LEFT JOIN GEBC orig ON v.shared_post_id = orig.id
+      WHERE (v.category = $1 OR (v.shared_post_id IS NOT NULL AND orig.category = $1))
+        AND v.status != 'blocked';
+    `;
     const countResult = await pool.query(countQuery, [id]);
     const totalGEBCs = parseInt(countResult.rows[0].count);
     const totalPages = Math.ceil(totalGEBCs / perPage);
@@ -654,6 +625,7 @@ export const getAllGEBCsByCategory = async (req, res) => {
       v.image,
       v.created_at AS created_at,
       v.user_id,
+      v.shared_post_id,
       u.username AS username,
       u.image AS user_image,
       c.name AS category_name,
@@ -661,12 +633,20 @@ export const getAllGEBCsByCategory = async (req, res) => {
       c.french_name AS category_french_name,
       sc.french_name AS sub_category_french_name,
       (SELECT COUNT(*) FROM GEBC_comment WHERE GEBC_comment.GEBC_id = v.id) AS comment_count,
-      (SELECT COUNT(*) FROM like_GEBC WHERE like_GEBC.GEBC_id = v.id) AS total_likes
+      (SELECT COUNT(*) FROM like_GEBC WHERE like_GEBC.GEBC_id = v.id) AS total_likes,
+      -- Original post details
+      orig.description AS original_description,
+      orig.image AS original_image,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at
     FROM GEBC v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN GEBC_category c ON v.category = c.id
     LEFT JOIN GEBC_sub_category sc ON v.sub_category = sc.id
-    WHERE v.category = $1 AND u.is_deleted=FALSE AND v.status != 'blocked'
+    LEFT JOIN GEBC orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+    WHERE (v.category = $1 OR (v.shared_post_id IS NOT NULL AND orig.category = $1)) AND u.is_deleted=FALSE AND v.status != 'blocked'
     ORDER BY v.created_at DESC
     LIMIT $2 OFFSET $3;`;
 
@@ -701,6 +681,14 @@ export const getAllGEBCsByCategory = async (req, res) => {
         created_at: gebc.created_at,
         comment_count: gebc.comment_count,
         total_likes: gebc.total_likes,
+        shared_post_id: gebc.shared_post_id,
+        original_post: gebc.shared_post_id ? {
+          description: gebc.original_description,
+          image: gebc.original_image,
+          username: gebc.original_username,
+          user_image: gebc.original_user_image,
+          created_at: gebc.original_created_at
+        } : null
       });
 
       acc[subCategoryId].GEBC_result.totalGEBCs++;
