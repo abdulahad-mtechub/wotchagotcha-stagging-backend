@@ -376,6 +376,17 @@ export const getSubcategoriesWithVideosByCategory = async (req, res) => {
     const specificOffset = (specificPage - 1) * specificLimit;
     const defaultLimit = 5;
 
+    // Check if the category exists
+    const checkCategoryQuery = "SELECT * FROM fan_star_category WHERE id = $1";
+    const checkCategoryResult = await pool.query(checkCategoryQuery, [
+      category_id,
+    ]);
+
+    if (checkCategoryResult.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ statusCode: 404, message: "Category not found" });
+    }
 
     // Get all subcategories for the given category
     const subcategoriesQuery = `
