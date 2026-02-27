@@ -3,7 +3,7 @@ import { getAllRows, getSingleRow } from "../queries/common.js";
 import { handle_delete_photos_from_folder } from "../utils/handleDeletePhoto.js";
 export const createQafi = async (req, res) => {
   try {
-    const { description, category, sub_category, user_id, image, video } = req.body;
+    const { description, category, sub_category, user_id, image, video, shared_post_id } = req.body;
     const checkQuery1 =
       "SELECT * FROM users WHERE id = $1 AND is_deleted = FALSE";
     const checkResult1 = await pool.query(checkQuery1, [user_id]);
@@ -14,39 +14,17 @@ export const createQafi = async (req, res) => {
         .json({ statusCode: 404, message: "User does not exist" });
     }
 
-    const checkCategoryQuery = "SELECT * FROM QAFI_category WHERE id = $1";
-    const checkCategoryResult = await pool.query(checkCategoryQuery, [
-      category,
-    ]);
-
-    if (checkCategoryResult.rowCount === 0) {
-      return res
-        .status(400)
-        .json({ statusCode: 400, message: "Category does not exist" });
-    }
-
-    const checkSubCategoryQuery =
-      "SELECT * FROM QAFI_sub_category WHERE id = $1 AND category_id = $2";
-    const checkSubCategoryResult = await pool.query(checkSubCategoryQuery, [
-      sub_category,
-      category,
-    ]);
-
-    if (checkSubCategoryResult.rowCount === 0) {
-      return res
-        .status(400)
-        .json({ statusCode: 400, message: "Sub-category does not exist" });
-    }
 
     const createQuery =
-      "INSERT INTO QAFI (description, category, sub_category, image, video, user_id) VALUES($1, $2, $3, $4, $5, $6) RETURNING *";
+      "INSERT INTO QAFI (description, category, sub_category, image, video, user_id, shared_post_id) VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *";
     const result = await pool.query(createQuery, [
-      description,
+      description || "",
       category,
       sub_category,
-      image,
-      video,
+      image || "",
+      video || "",
       user_id,
+      shared_post_id || null
     ]);
 
     if (result.rowCount === 1) {
@@ -634,22 +612,18 @@ export const getAllQafisByCategory = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if category exists
-    const checkQuery = "SELECT * FROM QAFI_category WHERE id = $1";
-    const checkResult = await pool.query(checkQuery, [id]);
-
-    if (checkResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Category does not exist" });
-    }
 
     let page = parseInt(req.query.page || 1);
     const perPage = parseInt(req.query.limit || 5);
     const offset = (page - 1) * perPage;
 
     // Count total QAFIs in the given category
-    const countQuery = `SELECT COUNT(*) FROM QAFI WHERE category = $1 AND status != 'blocked';`;
+    const countQuery = `
+      SELECT COUNT(*) FROM QAFI v
+      LEFT JOIN QAFI orig ON v.shared_post_id = orig.id
+      WHERE (v.category = $1 OR (v.shared_post_id IS NOT NULL AND orig.category = $1))
+        AND v.status != 'blocked';
+    `;
     const countResult = await pool.query(countQuery, [id]);
     const totalQAFIs = parseInt(countResult.rows[0].count);
     const totalPages = Math.ceil(totalQAFIs / perPage);
@@ -665,6 +639,7 @@ export const getAllQafisByCategory = async (req, res) => {
       v.video,
       v.created_at AS created_at,
       v.user_id,
+      v.shared_post_id,
       u.username AS username,
       u.image AS user_image,
       c.name AS category_name,
@@ -672,12 +647,21 @@ export const getAllQafisByCategory = async (req, res) => {
       c.french_name AS category_french_name,
       sc.french_name AS sub_category_french_name,
       (SELECT COUNT(*) FROM qafi_comment WHERE qafi_comment.qafi_id = v.id) AS comment_count,
-      (SELECT COUNT(*) FROM like_qafi WHERE like_qafi.qafi_id = v.id) AS total_likes
+      (SELECT COUNT(*) FROM like_qafi WHERE like_qafi.qafi_id = v.id) AS total_likes,
+      -- Original post details
+      orig.description AS original_description,
+      orig.image AS original_image,
+      orig.video AS original_video,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at
     FROM QAFI v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN QAFI_category c ON v.category = c.id
     LEFT JOIN QAFI_sub_category sc ON v.sub_category = sc.id
-    WHERE v.category = $1 AND u.is_deleted = FALSE AND v.status != 'blocked'
+    LEFT JOIN QAFI orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+    WHERE (v.category = $1 OR (v.shared_post_id IS NOT NULL AND orig.category = $1)) AND u.is_deleted = FALSE AND v.status != 'blocked'
     ORDER BY v.created_at DESC
     LIMIT $2 OFFSET $3;`;
 
@@ -713,6 +697,15 @@ export const getAllQafisByCategory = async (req, res) => {
         created_at: qafi.created_at,
         comment_count: qafi.comment_count,
         total_likes: qafi.total_likes,
+        shared_post_id: qafi.shared_post_id,
+        original_post: qafi.shared_post_id ? {
+          description: qafi.original_description,
+          image: qafi.original_image,
+          video: qafi.original_video,
+          username: qafi.original_username,
+          user_image: qafi.original_user_image,
+          created_at: qafi.original_created_at
+        } : null
       });
 
       acc[subCategoryId].QAFI_result.totalQAFIs++;

@@ -10,6 +10,7 @@ export const create = async (req, res) => {
       user_id,
       video,
       thumbnail,
+      shared_post_id,
     } = req.body;
     const checkQuery1 =
       "SELECT * FROM users WHERE id = $1 AND is_deleted=FALSE";
@@ -21,15 +22,16 @@ export const create = async (req, res) => {
         .json({ statusCode: 404, message: "user not exist" });
     }
     const createQuery =
-      "INSERT INTO kid_vids_videos (name,description,video,user_id,thumbnail,category_id, sub_category_id) VALUES($1,$2,$3,$4,$5,$6, $7) RETURNING *";
+      "INSERT INTO kid_vids_videos (name, description, video, user_id, thumbnail, category_id, sub_category_id, shared_post_id) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *";
     const result = await pool.query(createQuery, [
-      name,
-      description,
-      video,
+      name || "",
+      description || "",
+      video || "",
       user_id,
-      thumbnail,
+      thumbnail || "",
       category_id,
       sub_category_id,
+      shared_post_id || null,
     ]);
     if (result.rowCount === 1) {
       const query = `SELECT
@@ -369,17 +371,6 @@ export const getSubcategoriesWithVideosByCategory = async (req, res) => {
     const specificOffset = (specificPage - 1) * specificLimit;
     const defaultLimit = 5;
 
-    // Check if the category exists
-    const checkCategoryQuery = "SELECT * FROM kid_vids_category WHERE id = $1";
-    const checkCategoryResult = await pool.query(checkCategoryQuery, [
-      category_id,
-    ]);
-
-    if (checkCategoryResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Category not found" });
-    }
 
     // Get all subcategories for the given category
     const subcategoriesQuery = `
@@ -410,18 +401,30 @@ SELECT
   v.description,
   v.thumbnail,
   v.video,
+  v.video,
   v.user_id,
+  v.shared_post_id,
   u.username,
   u.image AS user_image,
   v.created_at,
   COUNT(DISTINCT c.id) AS comment_count,
-  COUNT(DISTINCT l.id) AS total_likes
+  COUNT(DISTINCT l.id) AS total_likes,
+  -- Original post details
+  orig.name AS original_name,
+  orig.description AS original_description,
+  orig.video AS original_video,
+  orig.thumbnail AS original_thumbnail,
+  orig_u.username AS original_username,
+  orig_u.image AS original_user_image,
+  orig.created_at AS original_created_at
 FROM kid_vids_videos v
 LEFT JOIN users u ON v.user_id = u.id
 LEFT JOIN kid_vids_video_comment c ON v.id = c.video_id
 LEFT JOIN kid_vids_video_like l ON v.id = l.video_id
+LEFT JOIN kid_vids_videos orig ON v.shared_post_id = orig.id
+LEFT JOIN users orig_u ON orig.user_id = orig_u.id
 WHERE v.sub_category_id = $1 AND v.status != 'blocked'
-GROUP BY v.id, u.username, u.image
+GROUP BY v.id, u.username, u.image, orig.name, orig.description, orig.video, orig.thumbnail, orig_u.username, orig_u.image, orig.created_at
 ORDER BY v.created_at DESC
 
       `;
@@ -465,7 +468,18 @@ ORDER BY v.created_at DESC
         totalPages,
         currentPage:
           parseInt(subcategory_id) === subcategory.id ? specificPage : 1,
-        videos: videosResult.rows,
+        videos: videosResult.rows.map(row => ({
+          ...row,
+          original_post: row.shared_post_id ? {
+            name: row.original_name,
+            description: row.original_description,
+            video: row.original_video,
+            thumbnail: row.original_thumbnail,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at
+          } : null
+        })),
       };
       delete subcategory.name;
       delete subcategory.id;

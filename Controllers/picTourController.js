@@ -4,33 +4,25 @@ import { handle_delete_photos_from_folder } from "../utils/handleDeletePhoto.js"
 
 export const createPicTour = async (req, res) => {
   try {
-    const { name, description, pic_category, sub_category, user_id, image } =
+    const { name, description, pic_category, pic_category_id, category_id, main_category_id, sub_category, sub_category_id, user_id, image, shared_post_id } =
       req.body;
+    const picCategoryVal = pic_category_id || pic_category || category_id || main_category_id || null;
+    const subCategoryVal = sub_category_id || sub_category || null;
 
-    // Check if the sub_category exists
-    const checkSubCategoryQuery =
-      "SELECT * FROM pic_sub_category WHERE id = $1";
-    const checkSubCategoryResult = await pool.query(checkSubCategoryQuery, [
-      sub_category,
-    ]);
-    if (checkSubCategoryResult.rowCount === 0) {
-      return res
-        .status(400)
-        .json({ statusCode: 400, message: "Sub category does not exist" });
-    }
 
     // Insert new pic tour record
     const createQuery = `
-      INSERT INTO pic_tours (name, description, pic_category, sub_category, image, user_id) 
-      VALUES($1, $2, $3, $4, $5, $6) 
+      INSERT INTO pic_tours (name, description, pic_category, sub_category, image, user_id, shared_post_id) 
+      VALUES($1, $2, $3, $4, $5, $6, $7) 
       RETURNING *`;
     const result = await pool.query(createQuery, [
-      name,
-      description,
-      pic_category,
-      sub_category,
-      image,
+      name || "",
+      description || "",
+      picCategoryVal,
+      subCategoryVal,
+      image || "",
       user_id,
+      shared_post_id || null,
     ]);
 
     if (result.rowCount === 1) {
@@ -148,28 +140,6 @@ export const updatePicTour = async (req, res) => {
         .json({ statusCode: 404, message: "User does not exist" });
     }
 
-    // Check if the pic_category exists
-    const checkPicCategoryQuery = "SELECT * FROM pic_category WHERE id = $1";
-    const checkPicCategoryResult = await pool.query(checkPicCategoryQuery, [
-      pic_category,
-    ]);
-    if (checkPicCategoryResult.rowCount === 0) {
-      return res
-        .status(400)
-        .json({ statusCode: 400, message: "Pic category does not exist" });
-    }
-
-    // Check if the sub_category exists
-    const checkSubCategoryQuery =
-      "SELECT * FROM pic_sub_category WHERE id = $1";
-    const checkSubCategoryResult = await pool.query(checkSubCategoryQuery, [
-      sub_category,
-    ]);
-    if (checkSubCategoryResult.rowCount === 0) {
-      return res
-        .status(400)
-        .json({ statusCode: 400, message: "Sub category does not exist" });
-    }
 
     let updateData = {
       image: oldImage[0].image,
@@ -807,14 +777,6 @@ export const getAllPicToursByUser = async (req, res) => {
 export const getAllRecentToursByCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const checkQuery = "SELECT * FROM pic_category WHERE id = $1";
-    const checkResult = await pool.query(checkQuery, [id]);
-
-    if (checkResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Pic category does not exist" });
-    }
 
     const page = parseInt(req.query.page || 1); // Get the page number from the query parameters
     const perPage = parseInt(req.query.limit || 10); // Number of results per page
@@ -868,14 +830,6 @@ export const getAllRecentToursByCategory = async (req, res) => {
 export const getAllPicTourByCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const checkQuery = "SELECT * FROM pic_category WHERE id = $1";
-    const checkResult = await pool.query(checkQuery, [id]);
-
-    if (checkResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Pic category does not exist" });
-    }
 
     const page = parseInt(req.query.page || 1); // Get the page number from the query parameters
     const perPage = parseInt(req.query.limit || 5); // Number of results per page
@@ -885,7 +839,9 @@ export const getAllPicTourByCategory = async (req, res) => {
     const countQuery = `
       SELECT COUNT(*) FROM pic_tours v 
       JOIN users u ON v.user_id = u.id
-      WHERE v.pic_category = $1 AND u.is_deleted = FALSE AND v.status != 'blocked';
+      LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
+      WHERE (v.pic_category = $1 OR (v.shared_post_id IS NOT NULL AND orig.pic_category = $1)) 
+        AND u.is_deleted = FALSE AND v.status != 'blocked';
     `;
     const countResult = await pool.query(countQuery, [id]);
     const totalTours = parseInt(countResult.rows[0].count);
@@ -905,6 +861,7 @@ export const getAllPicTourByCategory = async (req, res) => {
         v.image,
         v.created_at AS tour_created_at,
         v.user_id,
+        v.shared_post_id,
         u.username AS username,
         u.image AS userImage,
         (
@@ -912,11 +869,21 @@ export const getAllPicTourByCategory = async (req, res) => {
         ) AS comment_count,
         (
           SELECT COUNT(*) FROM like_pic lp WHERE lp.pic_tours_id = v.id
-        ) AS total_likes
+        ) AS total_likes,
+        -- Original post details
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
       FROM pic_tours v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN pic_sub_category psc ON v.sub_category = psc.id
-      WHERE v.pic_category = $1 AND u.is_deleted = FALSE AND v.status != 'blocked'
+      LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+      WHERE (v.pic_category = $1 OR (v.shared_post_id IS NOT NULL AND orig.pic_category = $1)) 
+        AND u.is_deleted = FALSE AND v.status != 'blocked'
       ORDER BY v.created_at DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -951,10 +918,19 @@ export const getAllPicTourByCategory = async (req, res) => {
         image: row.image,
         user_id: row.user_id,
         username: row.username,
-        user_image: row.userimage,
+        user_image: row.userImage,
         created_at: row.tour_created_at,
         comment_count: row.comment_count,
         total_likes: row.total_likes,
+        shared_post_id: row.shared_post_id,
+        original_post: row.shared_post_id ? {
+          name: row.original_name,
+          description: row.original_description,
+          image: row.original_image,
+          username: row.original_username,
+          user_image: row.original_user_image,
+          created_at: row.original_created_at
+        } : null
       });
 
       acc[subCategoryId].tour_result.totalTours += 1;
@@ -984,14 +960,6 @@ export const getAllPicTourByCategory = async (req, res) => {
 export const getMostViewedToursByCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const checkQuery = "SELECT * FROM pic_category WHERE id = $1";
-    const checkResult = await pool.query(checkQuery, [id]);
-
-    if (checkResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Pic category does not exist" });
-    }
 
     const page = parseInt(req.query.page || 1); // Get the page number from the query parameters
     const perPage = parseInt(req.query.limit || 10); // Number of results per page
@@ -1049,14 +1017,6 @@ export const getMostViewedToursByCategory = async (req, res) => {
 export const getAllTrendingToursByCategory = async (req, res) => {
   try {
     const { id } = req.params;
-    const checkQuery = "SELECT * FROM pic_category WHERE id = $1";
-    const checkResult = await pool.query(checkQuery, [id]);
-
-    if (checkResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Pic category does not exist" });
-    }
 
     const page = parseInt(req.query.page || 1); // Get the page number from the query parameters
     const perPage = parseInt(req.query.limit || 10); // Number of results per page
@@ -1117,14 +1077,6 @@ export const getAllTrendingToursByCategory = async (req, res) => {
 export const getComentedTours = async (req, res) => {
   try {
     const { id } = req.params;
-    const checkQuery = "SELECT * FROM pic_category WHERE id = $1";
-    const checkResult = await pool.query(checkQuery, [id]);
-
-    if (checkResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Pic category does not exist" });
-    }
 
     const page = parseInt(req.query.page || 1); // Get the page number from the query parameters
     const perPage = parseInt(req.query.limit || 10); // Number of results per page

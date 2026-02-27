@@ -6,11 +6,17 @@ export const create = async (req, res) => {
       name,
       description,
       category_id,
+      category,
+      main_category_id,
       sub_category_id,
+      sub_category,
       user_id,
       video,
       thumbnail,
+      shared_post_id,
     } = req.body;
+    const categoryVal = category_id || category || main_category_id || null;
+    const subCategoryVal = sub_category_id || sub_category || null;
     const checkQuery1 =
       "SELECT * FROM users WHERE id = $1 AND is_deleted=FALSE";
     const checkResult1 = await pool.query(checkQuery1, [user_id]);
@@ -21,31 +27,32 @@ export const create = async (req, res) => {
         .json({ statusCode: 404, message: "user not exist" });
     }
     const createQuery =
-      "INSERT INTO cinematics_videos (name,description,video,user_id,thumbnail,category_id, sub_category_id) VALUES($1,$2,$3,$4,$5,$6, $7) RETURNING *";
+      "INSERT INTO cinematics_videos (name, description, video, user_id, thumbnail, category_id, sub_category_id, shared_post_id) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *";
     const result = await pool.query(createQuery, [
-      name,
-      description,
-      video,
+      name || "",
+      description || "",
+      video || "",
       user_id,
-      thumbnail,
-      category_id,
-      sub_category_id,
+      thumbnail || "",
+      categoryVal,
+      subCategoryVal,
+      shared_post_id || null,
     ]);
     if (result.rowCount === 1) {
       const query = `SELECT
-        v.id AS id,
-        v.name AS name,
-        v.description AS description,
-        v.thumbnail As thumbnail,
+v.id AS id,
+  v.name AS name,
+    v.description AS description,
+      v.thumbnail As thumbnail,
         v.video AS video,
-        vc.name AS category_name,
-        vsc.name AS sub_category_name,
-        NULL AS french_category_name,
-        NULL AS french_sub_category_name,
-        v.user_id AS user_id,
-        u.username AS username,
-        u.image AS userImage,
-        v.created_at AS created_at
+          vc.name AS category_name,
+            vsc.name AS sub_category_name,
+              NULL AS french_category_name,
+                NULL AS french_sub_category_name,
+                  v.user_id AS user_id,
+                    u.username AS username,
+                      u.image AS userImage,
+                        v.created_at AS created_at
         
     FROM cinematics_videos v
     JOIN users u ON v.user_id = u.id
@@ -53,7 +60,7 @@ export const create = async (req, res) => {
     LEFT JOIN cinematics_sub_category vsc ON v.sub_category_id = vsc.id
     WHERE v.id = $1
     GROUP BY v.id, u.username, u.image, vc.name, vsc.name
-     `;
+  `;
       const data = await pool.query(query, [result.rows[0].id]);
       return res.status(201).json({
         statusCode: 201,
@@ -127,19 +134,19 @@ export const update = async (req, res) => {
 
     if (result.rowCount === 1) {
       const query = `SELECT
-        v.id AS id,
-        v.name AS name,
-        v.description AS description,
-        v.thumbnail As thumbnail,
+v.id AS id,
+  v.name AS name,
+    v.description AS description,
+      v.thumbnail As thumbnail,
         v.video AS video,
-        vc.name AS category_name,
-        vsc.name AS sub_category_name,
-        NULL AS french_category_name,
-        NULL AS french_sub_category_name,
-        v.user_id AS user_id,
-        u.username AS username,
-        u.image AS userImage,
-        v.created_at AS created_at
+          vc.name AS category_name,
+            vsc.name AS sub_category_name,
+              NULL AS french_category_name,
+                NULL AS french_sub_category_name,
+                  v.user_id AS user_id,
+                    u.username AS username,
+                      u.image AS userImage,
+                        v.created_at AS created_at
         
     FROM cinematics_videos v
     JOIN users u ON v.user_id = u.id
@@ -147,7 +154,7 @@ export const update = async (req, res) => {
     LEFT JOIN cinematics_sub_category vsc ON v.sub_category_id = vsc.id
     WHERE v.id = $1
     GROUP BY v.id, u.username, u.image, vc.name, vsc.name
-     `;
+  `;
       const data = await pool.query(query, [result.rows[0].id]);
       return res.status(200).json({
         statusCode: 200,
@@ -290,13 +297,13 @@ export const getComments = async (req, res) => {
     }
 
     const query = `SELECT
-      c.id AS comment_id,
-      c.comment AS comment,
-      u.id AS user_id,
+c.id AS comment_id,
+  c.comment AS comment,
+    u.id AS user_id,
       u.username AS username,
-      u.image AS user_image,
-      c.created_at AS created_at,
-      c.updated_at AS updated_at
+        u.image AS user_image,
+          c.created_at AS created_at,
+            c.updated_at AS updated_at
     FROM cinematics_video_comment c
     JOIN users u ON c.user_id = u.id
     WHERE c.video_id = $1
@@ -326,21 +333,21 @@ export const getTopVideoWithMostComments = async (req, res) => {
   try {
     const query = `
 SELECT
-  v.id AS video_id,
+v.id AS video_id,
   v.name,
   v.description,
   v.thumbnail,
   v.video,
   vc.name AS category_name,
-  vsc.name AS sub_category_name,
-  NULL AS category_french_name,
-  NULL AS sub_category_french_name,
-  v.user_id,
-  u.username,
-  u.image AS user_image,
-  v.created_at,
-  COUNT(DISTINCT c.id) AS comment_count,
-  COUNT(DISTINCT l.id) AS total_likes
+    vsc.name AS sub_category_name,
+      NULL AS category_french_name,
+        NULL AS sub_category_french_name,
+          v.user_id,
+          u.username,
+          u.image AS user_image,
+            v.created_at,
+            COUNT(DISTINCT c.id) AS comment_count,
+              COUNT(DISTINCT l.id) AS total_likes
 FROM cinematics_videos v
 JOIN users u ON v.user_id = u.id
 LEFT JOIN cinematics_category vc ON v.category_id = vc.id
@@ -350,7 +357,7 @@ LEFT JOIN cinematics_video_like l ON v.id = l.video_id
 GROUP BY v.id, vc.name, vsc.name, u.username, u.image
 ORDER BY comment_count DESC
 LIMIT 1;
-    `;
+`;
 
     const result = await pool.query(query);
 
@@ -380,18 +387,6 @@ export const getSubcategoriesWithVideosByCategory = async (req, res) => {
     const specificOffset = (specificPage - 1) * specificLimit;
     const defaultLimit = 5;
 
-    // Check if the category exists
-    const checkCategoryQuery =
-      "SELECT * FROM cinematics_category WHERE id = $1";
-    const checkCategoryResult = await pool.query(checkCategoryQuery, [
-      category_id,
-    ]);
-
-    if (checkCategoryResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Category not found" });
-    }
 
     // Get all subcategories for the given category
     const subcategoriesQuery = `
@@ -399,7 +394,7 @@ export const getSubcategoriesWithVideosByCategory = async (req, res) => {
       FROM cinematics_sub_category 
       WHERE category_id = $1
       ORDER BY created_at DESC
-    `;
+  `;
     const subcategoriesResult = await pool.query(subcategoriesQuery, [
       category_id,
     ]);
@@ -417,23 +412,35 @@ export const getSubcategoriesWithVideosByCategory = async (req, res) => {
     for (let subcategory of subcategories) {
       let videosQuery = `
 SELECT
-  v.id AS video_id,
+v.id AS video_id,
   v.name,
   v.description,
   v.thumbnail,
   v.video,
+  v.video,
   v.user_id,
+  v.shared_post_id,
   u.username,
   u.image AS user_image,
-  v.created_at,
-  COUNT(DISTINCT c.id) AS comment_count,
-  COUNT(DISTINCT l.id) AS total_likes
+    v.created_at,
+    COUNT(DISTINCT c.id) AS comment_count,
+      COUNT(DISTINCT l.id) AS total_likes,
+        --Original post details
+orig.name AS original_name,
+  orig.description AS original_description,
+    orig.video AS original_video,
+      orig.thumbnail AS original_thumbnail,
+        orig_u.username AS original_username,
+          orig_u.image AS original_user_image,
+            orig.created_at AS original_created_at
 FROM cinematics_videos v
 LEFT JOIN users u ON v.user_id = u.id
 LEFT JOIN cinematics_video_comment c ON v.id = c.video_id
 LEFT JOIN cinematics_video_like l ON v.id = l.video_id
+LEFT JOIN cinematics_videos orig ON v.shared_post_id = orig.id
+LEFT JOIN users orig_u ON orig.user_id = orig_u.id
 WHERE v.sub_category_id = $1 AND v.status != 'blocked'
-GROUP BY v.id, u.username, u.image
+GROUP BY v.id, u.username, u.image, orig.name, orig.description, orig.video, orig.thumbnail, orig_u.username, orig_u.image, orig.created_at
 ORDER BY v.created_at DESC
 
       `;
@@ -478,7 +485,18 @@ ORDER BY v.created_at DESC
         totalPages,
         currentPage:
           parseInt(subcategory_id) === subcategory.id ? specificPage : 1,
-        videos: videosResult.rows,
+        videos: videosResult.rows.map(row => ({
+          ...row,
+          original_post: row.shared_post_id ? {
+            name: row.original_name,
+            description: row.original_description,
+            video: row.original_video,
+            thumbnail: row.original_thumbnail,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at
+          } : null
+        })),
       };
       delete subcategory.name;
       delete subcategory.id;
@@ -517,23 +535,23 @@ export const getVideosByUserId = async (req, res) => {
 
     const videosQuery = `
 SELECT
-  v.id AS video_id,
+v.id AS video_id,
   v.name,
   v.description,
   v.thumbnail,
   v.video,
   v.category_id,
   vc.name AS category_name,
-  NULL AS category_french_name,
-  v.sub_category_id,
-  vsc.name AS sub_category_name,
-  NULL AS sub_category_french_name,
-  v.user_id,
-  u.username,
-  u.image AS user_image,
-  v.created_at,
-  COUNT(DISTINCT c.id) AS comment_count,
-  COUNT(DISTINCT l.id) AS total_likes
+    NULL AS category_french_name,
+      v.sub_category_id,
+      vsc.name AS sub_category_name,
+        NULL AS sub_category_french_name,
+          v.user_id,
+          u.username,
+          u.image AS user_image,
+            v.created_at,
+            COUNT(DISTINCT c.id) AS comment_count,
+              COUNT(DISTINCT l.id) AS total_likes
 FROM cinematics_videos v
 LEFT JOIN users u ON v.user_id = u.id
 LEFT JOIN cinematics_category vc ON v.category_id = vc.id
@@ -544,7 +562,7 @@ WHERE v.user_id = $1
 GROUP BY v.id, vc.name, vsc.name, u.username, u.image
 ORDER BY v.created_at DESC
 LIMIT $2 OFFSET $3;
-    `;
+`;
 
     const videosResult = await pool.query(videosQuery, [
       user_id,
@@ -618,10 +636,10 @@ export const toggleLikeVideo = async (req, res) => {
     } else {
       // If the like does not exist, like the video
       const likeQuery = `
-        INSERT INTO cinematics_video_like (video_id, user_id)
-        VALUES ($1, $2)
-        RETURNING *;
-      `;
+        INSERT INTO cinematics_video_like(video_id, user_id)
+VALUES($1, $2)
+RETURNING *;
+`;
       const likeResult = await pool.query(likeQuery, [video_id, user_id]);
 
       return res.status(201).json({
@@ -652,45 +670,45 @@ export const searchVideosByTitle = async (req, res) => {
 
     // Search videos by query with pagination
     const searchQuery = `
-           SELECT
-        v.id AS video_id,
-        v.name,
-        v.description,
-        v.thumbnail,
-        v.video,
-        v.category_id,
-        vc.name AS category_name,
-        NULL AS category_french_name,
-        v.sub_category_id,
-        vsc.name AS sub_category_name,
+SELECT
+v.id AS video_id,
+  v.name,
+  v.description,
+  v.thumbnail,
+  v.video,
+  v.category_id,
+  vc.name AS category_name,
+    NULL AS category_french_name,
+      v.sub_category_id,
+      vsc.name AS sub_category_name,
         NULL AS sub_category_french_name,
-        v.user_id,
-        u.username,
-        u.image AS user_image,
-        v.created_at,
-        COALESCE(likes.total_likes, 0) AS total_likes
+          v.user_id,
+          u.username,
+          u.image AS user_image,
+            v.created_at,
+            COALESCE(likes.total_likes, 0) AS total_likes
       FROM cinematics_videos v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN cinematics_category vc ON v.category_id = vc.id
       LEFT JOIN cinematics_sub_category vsc ON v.sub_category_id = vsc.id
-      LEFT JOIN (
-        SELECT video_id, COUNT(*) AS total_likes
+      LEFT JOIN(
+              SELECT video_id, COUNT(*) AS total_likes
         FROM cinematics_video_like
         GROUP BY video_id
-      ) likes ON v.id = likes.video_id
+            ) likes ON v.id = likes.video_id
       WHERE v.name ILIKE $1
       ORDER BY v.created_at DESC
       LIMIT $2 OFFSET $3
-    `;
+  `;
 
     const searchResult = await pool.query(searchQuery, [
-      `%${query}%`,
+      `% ${query}% `,
       perPage,
       offset,
     ]);
 
     const countQuery = `SELECT COUNT(*) FROM cinematics_videos WHERE name ILIKE $1`;
-    const totalVideosResult = await pool.query(countQuery, [`%${query}%`]);
+    const totalVideosResult = await pool.query(countQuery, [`% ${query}% `]);
     const totalVideos = totalVideosResult.rows[0].count;
     const totalPages = Math.ceil(totalVideos / perPage);
 
@@ -723,12 +741,12 @@ export const getLikes = async (req, res) => {
       SELECT COUNT(*) AS like_count 
       FROM cinematics_video_like 
       WHERE video_id = $1
-    `;
+  `;
 
     const detailsQuery = `
-      SELECT * FROM cinematics_video_like 
+SELECT * FROM cinematics_video_like 
       WHERE video_id = $1
-    `;
+  `;
 
     const countResult = await pool.query(query, [video_id]);
     const detailsResult = await pool.query(detailsQuery, [video_id]);

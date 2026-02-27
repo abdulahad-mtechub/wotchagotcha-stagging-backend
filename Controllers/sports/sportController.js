@@ -2,8 +2,10 @@ import pool from "../../db.config/index.js";
 
 export const create = async (req, res) => {
   try {
-    const { name, description, category_id, sub_category_id, user_id, image } =
+    const { name, description, category_id, category, main_category_id, sub_category_id, sub_category, user_id, image, shared_post_id } =
       req.body;
+    const categoryVal = category_id || category || main_category_id || null;
+    const subCategoryVal = sub_category_id || sub_category || null;
 
     const checkUserQuery =
       "SELECT * FROM users WHERE id = $1 AND is_deleted=FALSE";
@@ -15,41 +17,20 @@ export const create = async (req, res) => {
         .json({ statusCode: 404, message: "User does not exist" });
     }
 
-    const checkCategoryQuery = "SELECT * FROM sports_category WHERE id = $1";
-    const checkCategoryResult = await pool.query(checkCategoryQuery, [
-      category_id,
-    ]);
-
-    if (checkCategoryResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Category does not exist" });
-    }
-
-    const checkSubCategoryQuery =
-      "SELECT * FROM sport_sub_category WHERE id = $1";
-    const checkSubCategoryResult = await pool.query(checkSubCategoryQuery, [
-      sub_category_id,
-    ]);
-
-    if (checkSubCategoryResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Sub-category does not exist" });
-    }
 
     const createQuery = `
-            INSERT INTO sports (name, description, image, user_id, category_id, sub_category_id) 
-            VALUES ($1, $2, $3, $4, $5, $6) 
+            INSERT INTO sports (name, description, image, user_id, category_id, sub_category_id, shared_post_id) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7) 
             RETURNING *
         `;
     const result = await pool.query(createQuery, [
-      name,
-      description,
-      image,
+      name || "",
+      description || "",
+      image || "",
       user_id,
-      category_id,
-      sub_category_id,
+      categoryVal,
+      subCategoryVal,
+      shared_post_id || null,
     ]);
 
     if (result.rowCount === 1) {
@@ -372,17 +353,6 @@ export const getSubcategoriesWithSportsByCategory = async (req, res) => {
     const specificOffset = (specificPage - 1) * specificLimit;
     const defaultLimit = 5;
 
-    // Check if the category exists
-    const checkCategoryQuery = "SELECT * FROM sports_category WHERE id = $1";
-    const checkCategoryResult = await pool.query(checkCategoryQuery, [
-      category_id,
-    ]);
-
-    if (checkCategoryResult.rowCount === 0) {
-      return res
-        .status(404)
-        .json({ statusCode: 404, message: "Category not found" });
-    }
 
     // Get all subcategories for the given category
     const subcategoriesQuery = `
@@ -413,17 +383,27 @@ SELECT
   v.description, 
   v.image,
   v.user_id,
+  v.shared_post_id,
   u.username,
   u.image AS user_image,
   v.created_at,
   COUNT(DISTINCT c.id) AS comment_count,
-  COUNT(DISTINCT l.id) AS total_likes
+  COUNT(DISTINCT l.id) AS total_likes,
+  -- Original post details
+  orig.name AS original_name,
+  orig.description AS original_description,
+  orig.image AS original_image,
+  orig_u.username AS original_username,
+  orig_u.image AS original_user_image,
+  orig.created_at AS original_created_at
 FROM sports v
 LEFT JOIN users u ON v.user_id = u.id
 LEFT JOIN sport_comment c ON v.id = c.sport_id
 LEFT JOIN sport_like l ON v.id = l.sport_id
+LEFT JOIN sports orig ON v.shared_post_id = orig.id
+LEFT JOIN users orig_u ON orig.user_id = orig_u.id
 WHERE v.sub_category_id = $1 AND v.status != 'blocked'
-GROUP BY v.id, u.username, u.image
+GROUP BY v.id, u.username, u.image, orig.name, orig.description, orig.image, orig_u.username, orig_u.image, orig.created_at
 ORDER BY v.created_at DESC
 
       `;
@@ -467,7 +447,17 @@ ORDER BY v.created_at DESC
         totalPages,
         currentPage:
           parseInt(subcategory_id) === subcategory.id ? specificPage : 1,
-        Sports: sportsResult.rows,
+        Sports: sportsResult.rows.map(row => ({
+          ...row,
+          original_post: row.shared_post_id ? {
+            name: row.original_name,
+            description: row.original_description,
+            image: row.original_image,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at
+          } : null
+        })),
       };
       delete subcategory.name;
       delete subcategory.id;

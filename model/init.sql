@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS public.xpi_videos (
     video TEXT NOT NULL,
     thumbnail TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'active',
-    -- top BOOLEAN NOT NULL DEFAULT FALSE,
+    shared_post_id INT REFERENCES xpi_videos(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -155,10 +155,11 @@ name VARCHAR(255) NOT NULL,
 description TEXT NOT NULL,
 pic_category INT REFERENCES pic_category(id) ON DELETE CASCADE NOT NULL,
 sub_category INT REFERENCES pic_sub_category(id) ON DELETE CASCADE NOT NULL,
-image VARCHAR(255) NOT NULL,
-status VARCHAR(50) DEFAULT 'active',
-created_at TIMESTAMPTZ DEFAULT NOW(),
-updated_at TIMESTAMPTZ DEFAULT NOW()
+    image VARCHAR(255) NOT NULL,
+    status VARCHAR(50) DEFAULT 'active',
+    shared_post_id INT REFERENCES pic_tours(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE TABLE IF NOT EXISTS public.top_tours (
 id SERIAL PRIMARY KEY,
@@ -216,6 +217,7 @@ CREATE TABLE IF NOT EXISTS public.QAFI (
     sub_category INT REFERENCES QAFI_sub_category(id) ON DELETE CASCADE NOT NULL,
     image VARCHAR(255) NOT NULL,
     status VARCHAR(50) DEFAULT 'active',
+    shared_post_id INT REFERENCES QAFI(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -269,6 +271,7 @@ CREATE TABLE IF NOT EXISTS public.GEBC (
     sub_category INT REFERENCES GEBC_sub_category(id) ON DELETE CASCADE NOT NULL,
     image VARCHAR(255) NOT NULL,
     status VARCHAR(50) DEFAULT 'active',
+    shared_post_id INT REFERENCES GEBC(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -322,6 +325,7 @@ CREATE TABLE IF NOT EXISTS public.NEWS (
     sub_category INT REFERENCES NEWS_sub_category(id) ON DELETE CASCADE NOT NULL,
     image VARCHAR(255) NOT NULL,
     status VARCHAR(50) DEFAULT 'active',
+    shared_post_id INT REFERENCES NEWS(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -434,6 +438,7 @@ CREATE TABLE IF NOT EXISTS public.item (
     top_added_date TIMESTAMPTZ,
     paid_status BOOLEAN NOT NULL,
     status VARCHAR(50) DEFAULT 'active',
+    shared_post_id INT REFERENCES item(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT check_condition_type CHECK (
@@ -598,6 +603,7 @@ CREATE TABLE IF NOT EXISTS public.cinematics_videos (
     video TEXT NOT NULL,
     thumbnail TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'active',
+    shared_post_id INT REFERENCES cinematics_videos(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -650,6 +656,7 @@ CREATE TABLE IF NOT EXISTS public.fan_star_videos (
     video TEXT NOT NULL,
     thumbnail TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'active',
+    shared_post_id INT REFERENCES fan_star_videos(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -702,6 +709,7 @@ CREATE TABLE IF NOT EXISTS public.tv_progmax_videos (
     video TEXT NOT NULL,
     thumbnail TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'active',
+    shared_post_id INT REFERENCES tv_progmax_videos(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -754,6 +762,7 @@ CREATE TABLE IF NOT EXISTS public.kid_vids_videos (
     video TEXT NOT NULL,
     thumbnail TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'active',
+    shared_post_id INT REFERENCES kid_vids_videos(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -806,6 +815,7 @@ CREATE TABLE IF NOT EXISTS public.learning_hobbies_videos (
     video TEXT NOT NULL,
     thumbnail TEXT NOT NULL,
     status VARCHAR(50) DEFAULT 'active',
+    shared_post_id INT REFERENCES learning_hobbies_videos(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -880,6 +890,7 @@ CREATE TABLE IF NOT EXISTS public.sports (
     sub_category_id INT REFERENCES sport_sub_category(id) ON DELETE CASCADE NOT NULL,
     image TEXT NOT NULL, 
     status VARCHAR(50) DEFAULT 'active',
+    shared_post_id INT REFERENCES sports(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -964,3 +975,68 @@ CREATE TABLE IF NOT EXISTS public.follow (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT unique_follow UNIQUE (follower_id, following_id)
 );
+
+-- ─── Migration: Add shared_post_id to existing tables ─────────────────────
+DO $$
+BEGIN
+    -- xpi_videos
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='xpi_videos' AND column_name='shared_post_id') THEN
+        ALTER TABLE public.xpi_videos ADD COLUMN shared_post_id INT REFERENCES public.xpi_videos(id) ON DELETE SET NULL;
+    END IF;
+
+    -- NEWS
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='news' AND column_name='shared_post_id') THEN
+        ALTER TABLE public.NEWS ADD COLUMN shared_post_id INT REFERENCES public.NEWS(id) ON DELETE SET NULL;
+    END IF;
+
+    -- QAFI
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='qafi' AND column_name='shared_post_id') THEN
+        ALTER TABLE public.QAFI ADD COLUMN shared_post_id INT REFERENCES public.QAFI(id) ON DELETE SET NULL;
+    END IF;
+
+    -- GEBC
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gebc' AND column_name='shared_post_id') THEN
+        ALTER TABLE public.GEBC ADD COLUMN shared_post_id INT REFERENCES public.GEBC(id) ON DELETE SET NULL;
+    END IF;
+
+    -- pic_tours
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='pic_tours' AND column_name='shared_post_id') THEN
+        ALTER TABLE public.pic_tours ADD COLUMN shared_post_id INT REFERENCES public.pic_tours(id) ON DELETE SET NULL;
+    END IF;
+
+    -- cinematics_videos
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cinematics_videos' AND column_name='shared_post_id') THEN
+        ALTER TABLE public.cinematics_videos ADD COLUMN shared_post_id INT REFERENCES public.cinematics_videos(id) ON DELETE SET NULL;
+    END IF;
+
+    -- fan_star_videos
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='fan_star_videos' AND column_name='shared_post_id') THEN
+        ALTER TABLE public.fan_star_videos ADD COLUMN shared_post_id INT REFERENCES public.fan_star_videos(id) ON DELETE SET NULL;
+    END IF;
+
+    -- tv_progmax_videos
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tv_progmax_videos' AND column_name='shared_post_id') THEN
+        ALTER TABLE public.tv_progmax_videos ADD COLUMN shared_post_id INT REFERENCES public.tv_progmax_videos(id) ON DELETE SET NULL;
+    END IF;
+
+    -- kid_vids_videos
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='kid_vids_videos' AND column_name='shared_post_id') THEN
+        ALTER TABLE public.kid_vids_videos ADD COLUMN shared_post_id INT REFERENCES public.kid_vids_videos(id) ON DELETE SET NULL;
+    END IF;
+
+    -- learning_hobbies_videos
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='learning_hobbies_videos' AND column_name='shared_post_id') THEN
+        ALTER TABLE public.learning_hobbies_videos ADD COLUMN shared_post_id INT REFERENCES public.learning_hobbies_videos(id) ON DELETE SET NULL;
+    END IF;
+
+    -- sports
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='sports' AND column_name='shared_post_id') THEN
+        ALTER TABLE public.sports ADD COLUMN shared_post_id INT REFERENCES public.sports(id) ON DELETE SET NULL;
+    END IF;
+
+    -- item
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='item' AND column_name='shared_post_id') THEN
+        ALTER TABLE public.item ADD COLUMN shared_post_id INT REFERENCES public.item(id) ON DELETE SET NULL;
+    END IF;
+
+END $$;
