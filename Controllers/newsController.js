@@ -38,18 +38,39 @@ export const createNews = async (req, res) => {
         v.image,
         v.created_at AS news_created_at,
         v.user_id,
+        v.shared_post_id,
         u.username AS username,
-        u.image AS userImage
+        u.image AS userImage,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
       FROM NEWS v
       JOIN users u ON v.user_id = u.id
+      LEFT JOIN NEWS orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.id = $1
-      GROUP BY v.id, u.username, u.image;
+      GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;
      `;
       const data = await pool.query(query, [result.rows[0].id]);
+      const newsData = data.rows[0];
+      if (newsData.shared_post_id) {
+        newsData.original_post = {
+          id: newsData.shared_post_id,
+          description: newsData.original_description,
+          image: newsData.original_image,
+          username: newsData.original_username,
+          user_image: newsData.original_user_image,
+          created_at: newsData.original_created_at,
+        };
+      } else {
+        newsData.original_post = null;
+      }
       return res.status(201).json({
         statusCode: 201,
         message: "NEWS posted successfully",
-        data: data.rows[0],
+        data: newsData,
       });
     }
 
@@ -145,18 +166,39 @@ export const updateNews = async (req, res) => {
       v.image,
       v.created_at AS news_created_at,
       v.user_id,
+      v.shared_post_id,
       u.username AS username,
-      u.image AS userImage
+      u.image AS userImage,
+      orig.description AS original_description,
+      orig.image AS original_image,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at
     FROM NEWS v
     JOIN users u ON v.user_id = u.id
+    LEFT JOIN NEWS orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.id = $1
-    GROUP BY v.id, u.username, u.image;
+    GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;
    `;
       const data = await pool.query(query, [id]);
+      const newsData = data.rows[0];
+      if (newsData.shared_post_id) {
+        newsData.original_post = {
+          id: newsData.shared_post_id,
+          description: newsData.original_description,
+          image: newsData.original_image,
+          username: newsData.original_username,
+          user_image: newsData.original_user_image,
+          created_at: newsData.original_created_at,
+        };
+      } else {
+        newsData.original_post = null;
+      }
       return res.status(200).json({
         statusCode: 200,
         message: "NEWS updated successfully",
-        updateNews: data.rows[0],
+        updateNews: newsData,
       });
     } else {
       res
@@ -220,23 +262,45 @@ export const sendComment = async (req, res) => {
       "INSERT INTO NEWS_comment (NEWS_id,user_id,comment) VALUES($1,$2,$3) RETURNING *";
     const result = await pool.query(createQuery, [NEWS_id, user_id, comment]);
     if (result.rowCount === 1) {
-      let commentQuery = `SELECT 
-      v.NEWS_id AS news_id,
-      v.id AS commentId,
-            v.comment AS comment,
-            u.id AS userId,
-            u.username AS username,
-            u.image AS userImage
-            FROM NEWS_comment v
-            LEFT JOIN users u ON v.user_id = u.id
-            WHERE v.id=$1
-            ORDER BY v.created_at DESC;
-            `;
+      let commentQuery = `SELECT
+      nc.NEWS_id AS news_id,
+      nc.id AS commentId,
+      nc.comment AS comment,
+      nc.user_id AS userId,
+      u.username AS username,
+      u.image AS userImage,
+      n.shared_post_id,
+      orig.description AS original_description,
+      orig.image AS original_image,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at
+    FROM NEWS_comment nc
+    LEFT JOIN users u ON nc.user_id = u.id
+    LEFT JOIN NEWS n ON nc.NEWS_id = n.id
+    LEFT JOIN NEWS orig ON n.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+    WHERE nc.id=$1
+    ORDER BY nc.created_at DESC;
+        `;
       const { rows } = await pool.query(commentQuery, [result.rows[0].id]);
+      const commentData = rows[0];
+      if (commentData && commentData.shared_post_id) {
+        commentData.original_post = {
+          id: commentData.shared_post_id,
+          description: commentData.original_description,
+          image: commentData.original_image,
+          username: commentData.original_username,
+          user_image: commentData.original_user_image,
+          created_at: commentData.original_created_at,
+        };
+      } else if (commentData) {
+        commentData.original_post = null;
+      }
       return res.status(201).json({
         statusCode: 201,
         message: "Comment posted successfully",
-        data: rows[0],
+        data: commentData,
       });
     }
     res.status(400).json({ statusCode: 400, message: "Not uploaded" });
@@ -272,21 +336,44 @@ export const getAllCommentsByNews = async (req, res) => {
         n.image AS news_image,
         n.created_at AS news_created_at,
         c.name AS category_name,
-        sc.name AS sub_category_name
+        sc.name AS sub_category_name,
+        n.shared_post_id,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
       FROM NEWS_comment v
       JOIN NEWS n ON v.NEWS_id = n.id
       LEFT JOIN users u ON v.user_id = u.id
       LEFT JOIN NEWS_category c ON n.category = c.id
       LEFT JOIN NEWS_sub_category sc ON n.sub_category = sc.id
+      LEFT JOIN NEWS orig ON n.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.NEWS_id = $1 AND u.is_deleted=FALSE
       ORDER BY v.created_at DESC;
     `;
 
     const { rows } = await pool.query(commentQuery, [id]);
+    const commentsWithOriginalPost = rows.map(row => {
+      if (row.shared_post_id) {
+        row.original_post = {
+          id: row.shared_post_id,
+          description: row.original_description,
+          image: row.original_image,
+          username: row.original_username,
+          user_image: row.original_user_image,
+          created_at: row.original_created_at,
+        };
+      } else {
+        row.original_post = null;
+      }
+      return row;
+    });
     res.status(200).json({
       statusCode: 200,
-      totalComments: rows.length,
-      AllComments: rows,
+      totalComments: commentsWithOriginalPost.length,
+      AllComments: commentsWithOriginalPost,
     });
   } catch (error) {
     console.error(error);
@@ -383,21 +470,44 @@ export const getAllLikesByNews = async (req, res) => {
         n.image AS news_image,
         n.created_at AS news_created_at,
         c.name AS category_name,
-        sc.name AS sub_category_name
+        sc.name AS sub_category_name,
+        n.shared_post_id,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
       FROM like_NEWS l
       LEFT JOIN users u ON l.user_id = u.id
       LEFT JOIN NEWS n ON l.NEWS_id = n.id
       LEFT JOIN NEWS_category c ON n.category = c.id
       LEFT JOIN NEWS_sub_category sc ON n.sub_category = sc.id
+      LEFT JOIN NEWS orig ON n.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE l.NEWS_id = $1 AND u.is_deleted=FALSE
       ORDER BY l.created_at DESC;
     `;
 
     const { rows } = await pool.query(likeQuery, [id]);
+    const likesWithOriginalPost = rows.map(row => {
+      if (row.shared_post_id) {
+        row.original_post = {
+          id: row.shared_post_id,
+          description: row.original_description,
+          image: row.original_image,
+          username: row.original_username,
+          user_image: row.original_user_image,
+          created_at: row.original_created_at,
+        };
+      } else {
+        row.original_post = null;
+      }
+      return row;
+    });
     res.status(200).json({
       statusCode: 200,
-      totalLikes: rows.length,
-      AllLikes: rows,
+      totalLikes: likesWithOriginalPost.length,
+      AllLikes: likesWithOriginalPost,
     });
   } catch (error) {
     console.error(error);
@@ -447,18 +557,39 @@ export const getSpecificNews = async (req, res) => {
         FROM like_NEWS lv
         JOIN users lu ON lv.user_id = lu.id
         WHERE lv.NEWS_id = v.id
-    ) AS likes
+    ) AS likes,
+        v.shared_post_id,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
 FROM NEWS v
 JOIN users u ON v.user_id = u.id
+LEFT JOIN NEWS orig ON v.shared_post_id = orig.id
+LEFT JOIN users orig_u ON orig.user_id = orig_u.id
 WHERE v.id = $1 AND u.is_deleted=FALSE
-GROUP BY v.id, u.username, u.image;
+GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;
 
  
  `;
 
     const { rows } = await pool.query(query, [id]);
     if (rows.length > 0) {
-      return res.status(200).json({ statusCode: 200, News: rows[0] });
+      const newsData = rows[0];
+      if (newsData.shared_post_id) {
+        newsData.original_post = {
+          id: newsData.shared_post_id,
+          description: newsData.original_description,
+          image: newsData.original_image,
+          username: newsData.original_username,
+          user_image: newsData.original_user_image,
+          created_at: newsData.original_created_at,
+        };
+      } else {
+        newsData.original_post = null;
+      }
+      return res.status(200).json({ statusCode: 200, News: newsData });
     } else {
       res.status(404).json({ statusCode: 404, message: "No news found" });
     }
@@ -481,17 +612,26 @@ export const getAllNews = async (req, res) => {
       v.image,
       v.created_at AS news_created_at,
       v.user_id,
+      v.shared_post_id,
       u.username AS username,
       u.image AS userImage,
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
-      sc.french_name AS sub_category_french_name
+      sc.french_name AS sub_category_french_name,
+      orig.description AS original_description,
+      orig.image AS original_image,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at
     FROM NEWS v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN NEWS_category c ON v.category = c.id
     LEFT JOIN NEWS_sub_category sc ON v.sub_category = sc.id
+    LEFT JOIN NEWS orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE u.is_deleted=FALSE
+    GROUP BY v.id, u.username, u.image, c.id, sc.id, orig.id, orig_u.id
     ORDER BY v.created_at DESC`;
 
     if (req.query.page !== undefined && req.query.limit !== undefined) {
@@ -511,7 +651,21 @@ export const getAllNews = async (req, res) => {
       res.status(200).json({
         statusCode: 200,
         totalNEWS: rows.length,
-        AllNEWS: rows,
+        News: rows.map((row) => {
+          if (row.shared_post_id) {
+            row.original_post = {
+              id: row.shared_post_id,
+              description: row.original_description,
+              image: row.original_image,
+              username: row.original_username,
+              user_image: row.original_user_image,
+              created_at: row.original_created_at,
+            };
+          } else {
+            row.original_post = null;
+          }
+          return row;
+        }),
       });
     } else {
       // Calculate the total number of NEWS (without pagination)
@@ -525,7 +679,21 @@ export const getAllNews = async (req, res) => {
         statusCode: 200,
         totalNEWS,
         totalPages,
-        AllNEWS: rows,
+        AllNEWS: rows.map((row) => {
+          if (row.shared_post_id) {
+            row.original_post = {
+              id: row.shared_post_id,
+              description: row.original_description,
+              image: row.original_image,
+              username: row.original_username,
+              user_image: row.original_user_image,
+              created_at: row.original_created_at,
+            };
+          } else {
+            row.original_post = null;
+          }
+          return row;
+        }),
       });
     }
   } catch (error) {
@@ -570,12 +738,21 @@ export const getAllNewsByUser = async (req, res) => {
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
-      sc.french_name AS sub_category_french_name
+      sc.french_name AS sub_category_french_name,
+      v.shared_post_id,
+      orig.description AS original_description,
+      orig.image AS original_image,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at
     FROM NEWS v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN NEWS_category c ON v.category = c.id
     LEFT JOIN NEWS_sub_category sc ON v.sub_category = sc.id
+    LEFT JOIN NEWS orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.user_id = $1 AND u.is_deleted=FALSE
+    GROUP BY v.id, u.username, u.image, c.id, sc.id, orig.id, orig_u.id
     ORDER BY v.created_at DESC
     LIMIT $2 OFFSET $3;`;
 
@@ -583,7 +760,26 @@ export const getAllNewsByUser = async (req, res) => {
 
     return res
       .status(200)
-      .json({ statusCode: 200, totalPages, totalNews, News: rows });
+      .json({
+        statusCode: 200,
+        totalPages,
+        totalNews,
+        News: rows.map((row) => {
+          if (row.shared_post_id) {
+            row.original_post = {
+              id: row.shared_post_id,
+              description: row.original_description,
+              image: row.original_image,
+              username: row.original_username,
+              user_image: row.original_user_image,
+              created_at: row.original_created_at,
+            };
+          } else {
+            row.original_post = null;
+          }
+          return row;
+        })
+      });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
@@ -691,6 +887,7 @@ export const getAllNewsByCategory = async (req, res) => {
         shared_post_id: news.shared_post_id,
         original_post: news.shared_post_id
           ? {
+            id: news.shared_post_id,
             description: news.original_description,
             image: news.original_image,
             username: news.original_username,
@@ -741,6 +938,12 @@ export const getTopNewsWithMostComments = async (req, res) => {
         u.username,
         u.image AS user_image,
         n.created_at,
+        n.shared_post_id,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at,
         COUNT(DISTINCT c.id) AS comment_count,
         COUNT(DISTINCT l.id) AS total_likes
       FROM NEWS n
@@ -749,7 +952,9 @@ export const getTopNewsWithMostComments = async (req, res) => {
       LEFT JOIN NEWS_sub_category nsc ON n.sub_category = nsc.id
       LEFT JOIN NEWS_comment c ON n.id = c.NEWS_id
       LEFT JOIN like_NEWS l ON n.id = l.NEWS_id
-      GROUP BY n.id, nc.name, nsc.name, u.username, u.image
+      LEFT JOIN NEWS orig ON n.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+      GROUP BY n.id, nc.name, nsc.name, u.username, u.image, orig.id, orig_u.id
       ORDER BY comment_count DESC
       LIMIT 1;
     `;
@@ -762,10 +967,24 @@ export const getTopNewsWithMostComments = async (req, res) => {
         .json({ statusCode: 404, message: "No news found" });
     }
 
+    const topNews = result.rows[0];
+    if (topNews.shared_post_id) {
+      topNews.original_post = {
+        id: topNews.shared_post_id,
+        description: topNews.original_description,
+        image: topNews.original_image,
+        username: topNews.original_username,
+        user_image: topNews.original_user_image,
+        created_at: topNews.original_created_at,
+      };
+    } else {
+      topNews.original_post = null;
+    }
+
     return res.status(200).json({
       statusCode: 200,
       message: "Top news with the most comments retrieved successfully",
-      data: result.rows[0],
+      data: topNews,
     });
   } catch (error) {
     console.error(error);
@@ -797,22 +1016,49 @@ export const searchNews = async (req, res) => {
       v.image,
       v.created_at AS news_created_at,
       v.user_id,
+      v.shared_post_id,
       u.username AS username,
       u.image AS userImage,
       c.name AS category_name,
-      sc.name AS sub_category_name
+      sc.name AS sub_category_name,
+      orig.description AS original_description,
+      orig.image AS original_image,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at
     FROM NEWS v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN NEWS_category c ON v.category = c.id
     LEFT JOIN NEWS_sub_category sc ON v.sub_category = sc.id
+    LEFT JOIN NEWS orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE (${conditions.join(" OR ")}) AND u.is_deleted=FALSE
+    GROUP BY v.id, u.username, u.image, c.id, sc.id, orig.id, orig_u.id
     ORDER BY v.created_at DESC`;
 
     const { rows } = await pool.query(query);
 
     return res
       .status(200)
-      .json({ statusCode: 200, totalNews: rows.length, News: rows });
+      .json({
+        statusCode: 200,
+        totalNews: rows.length,
+        News: rows.map((row) => {
+          if (row.shared_post_id) {
+            row.original_post = {
+              id: row.shared_post_id,
+              description: row.original_description,
+              image: row.original_image,
+              username: row.original_username,
+              user_image: row.original_user_image,
+              created_at: row.original_created_at,
+            };
+          } else {
+            row.original_post = null;
+          }
+          return row;
+        })
+      });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });

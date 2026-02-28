@@ -38,18 +38,41 @@ export const createQafi = async (req, res) => {
           v.video,
           v.created_at AS tour_created_at,
           v.user_id,
+          v.shared_post_id,
           u.username AS username,
-          u.image AS userImage
+          u.image AS userImage,
+          orig.description AS original_description,
+          orig.image AS original_image,
+          orig.video AS original_video,
+          orig_u.username AS original_username,
+          orig_u.image AS original_user_image,
+          orig.created_at AS original_created_at
         FROM QAFI v
         JOIN users u ON v.user_id = u.id
+        LEFT JOIN QAFI orig ON v.shared_post_id = orig.id
+        LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE v.id = $1
-        GROUP BY v.id, u.username, u.image;
+        GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;
       `;
       const data = await pool.query(query, [result.rows[0].id]);
+      const qafiData = data.rows[0];
+      if (qafiData.shared_post_id) {
+        qafiData.original_post = {
+          id: qafiData.shared_post_id,
+          description: qafiData.original_description,
+          image: qafiData.original_image,
+          video: qafiData.original_video,
+          username: qafiData.original_username,
+          user_image: qafiData.original_user_image,
+          created_at: qafiData.original_created_at,
+        };
+      } else {
+        qafiData.original_post = null;
+      }
       return res.status(201).json({
         statusCode: 201,
         message: "QAFI posted successfully",
-        data: data.rows[0],
+        data: qafiData,
       });
     }
     res.status(400).json({ statusCode: 400, message: "Not uploaded" });
@@ -154,18 +177,41 @@ export const updateQafi = async (req, res) => {
           v.video,
           v.created_at AS tour_created_at,
           v.user_id,
+          v.shared_post_id,
           u.username AS username,
-          u.image AS userImage
+          u.image AS userImage,
+          orig.description AS original_description,
+          orig.image AS original_image,
+          orig.video AS original_video,
+          orig_u.username AS original_username,
+          orig_u.image AS original_user_image,
+          orig.created_at AS original_created_at
         FROM QAFI v
         JOIN users u ON v.user_id = u.id
+        LEFT JOIN QAFI orig ON v.shared_post_id = orig.id
+        LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE v.id = $1
-        GROUP BY v.id, u.username, u.image;
+        GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;
       `;
       const data = await pool.query(query, [id]);
+      const qafiData = data.rows[0];
+      if (qafiData.shared_post_id) {
+        qafiData.original_post = {
+          id: qafiData.shared_post_id,
+          description: qafiData.original_description,
+          image: qafiData.original_image,
+          video: qafiData.original_video,
+          username: qafiData.original_username,
+          user_image: qafiData.original_user_image,
+          created_at: qafiData.original_created_at,
+        };
+      } else {
+        qafiData.original_post = null;
+      }
       return res.status(200).json({
         statusCode: 200,
         message: "QAFI updated successfully",
-        updateQafi: data.rows[0],
+        updateQafi: qafiData,
       });
     } else {
       res
@@ -242,17 +288,41 @@ export const sendComment = async (req, res) => {
             v.comment AS comment,
             u.id AS userId,
             u.username AS username,
-            u.image AS userImage
+            u.image AS userImage,
+            q.shared_post_id,
+            orig.description AS original_description,
+            orig.image AS original_image,
+            orig.video AS original_video,
+            orig_u.username AS original_username,
+            orig_u.image AS original_user_image,
+            orig.created_at AS original_created_at
             FROM qafi_comment v
             LEFT JOIN users u ON v.user_id = u.id
+            LEFT JOIN qafi q ON v.QAFI_id = q.id
+            LEFT JOIN QAFI orig ON q.shared_post_id = orig.id
+            LEFT JOIN users orig_u ON orig.user_id = orig_u.id
             WHERE v.id=$1
             ORDER BY v.created_at DESC;
             `;
       const { rows } = await pool.query(commentQuery, [result.rows[0].id]);
+      const commentData = rows[0];
+      if (commentData && commentData.shared_post_id) {
+        commentData.original_post = {
+          id: commentData.shared_post_id,
+          description: commentData.original_description,
+          image: commentData.original_image,
+          video: commentData.original_video,
+          username: commentData.original_username,
+          user_image: commentData.original_user_image,
+          created_at: commentData.original_created_at,
+        };
+      } else if (commentData) {
+        commentData.original_post = null;
+      }
       return res.status(201).json({
         statusCode: 201,
         message: "Comment posted successfully",
-        data: rows[0],
+        data: commentData,
       });
     }
     res.status(400).json({ statusCode: 400, message: "Not uploaded" });
@@ -465,18 +535,41 @@ export const getSpecificQafi = async (req, res) => {
         FROM like_qafi lv
         JOIN users lu ON lv.user_id = lu.id
         WHERE lv.QAFI_id = v.id
-    ) AS likes
+    ) AS likes,
+        v.shared_post_id,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig.video AS original_video,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
 FROM QAFI v
 JOIN users u ON v.user_id = u.id
+LEFT JOIN QAFI orig ON v.shared_post_id = orig.id
+LEFT JOIN users orig_u ON orig.user_id = orig_u.id
 WHERE v.id = $1 AND u.is_deleted=FALSE
-GROUP BY v.id, u.username, u.image;
+GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;
 
  
  `;
 
     const { rows } = await pool.query(query, [id]);
 
-    return res.status(200).json({ statusCode: 200, QAFI: rows[0] || [] });
+    const qafiData = rows[0];
+    if (qafiData && qafiData.shared_post_id) {
+      qafiData.original_post = {
+        id: qafiData.shared_post_id,
+        description: qafiData.original_description,
+        image: qafiData.original_image,
+        video: qafiData.original_video,
+        username: qafiData.original_username,
+        user_image: qafiData.original_user_image,
+        created_at: qafiData.original_created_at,
+      };
+    } else if (qafiData) {
+      qafiData.original_post = null;
+    }
+    return res.status(200).json({ statusCode: 200, QAFI: qafiData || [] });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
@@ -497,17 +590,27 @@ export const getAllQAFIs = async (req, res) => {
       v.video,
       v.created_at AS tour_created_at,
       v.user_id,
+      v.shared_post_id,
       u.username AS username,
       u.image AS userImage,
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
-      sc.french_name AS sub_category_french_name
+      sc.french_name AS sub_category_french_name,
+      orig.description AS original_description,
+      orig.image AS original_image,
+      orig.video AS original_video,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at
     FROM qafi v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN QAFI_category c ON v.category = c.id
     LEFT JOIN QAFI_sub_category sc ON v.sub_category = sc.id
+    LEFT JOIN QAFI orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE u.is_deleted = FALSE
+    GROUP BY v.id, u.username, u.image, c.id, sc.id, orig.id, orig_u.id
     ORDER BY v.created_at DESC`;
 
     if (req.query.page !== undefined && req.query.limit !== undefined) {
@@ -524,10 +627,27 @@ export const getAllQAFIs = async (req, res) => {
 
     if (req.query.page === undefined && req.query.limit === undefined) {
       // If no pagination is applied, don't calculate totalCategories and totalPages
+      const formattedRows = rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            description: row.original_description,
+            image: row.original_image,
+            video: row.original_video,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      });
+
       res.status(200).json({
         statusCode: 200,
-        totalQAFIs: rows.length,
-        AllQAFIs: rows,
+        totalQAFIs: formattedRows.length,
+        AllQAFIs: formattedRows,
       });
     } else {
       // Calculate the total number of QAFIs (without pagination)
@@ -541,7 +661,22 @@ export const getAllQAFIs = async (req, res) => {
         statusCode: 200,
         totalQAFIs,
         totalPages,
-        AllQAFIs: rows,
+        AllQAFIs: rows.map((row) => {
+          if (row.shared_post_id) {
+            row.original_post = {
+              id: row.shared_post_id,
+              description: row.original_description,
+              image: row.original_image,
+              video: row.original_video,
+              username: row.original_username,
+              user_image: row.original_user_image,
+              created_at: row.original_created_at,
+            };
+          } else {
+            row.original_post = null;
+          }
+          return row;
+        }),
       });
     }
   } catch (error) {
@@ -582,26 +717,54 @@ export const getAllQafisByUser = async (req, res) => {
       v.video,
       v.created_at AS tour_created_at,
       v.user_id,
+      v.shared_post_id,
       u.username AS username,
       u.image AS userImage,
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
-      sc.french_name AS sub_category_french_name
+      sc.french_name AS sub_category_french_name,
+      orig.description AS original_description,
+      orig.image AS original_image,
+      orig.video AS original_video,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at
     FROM qafi v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN QAFI_category c ON v.category = c.id
     LEFT JOIN QAFI_sub_category sc ON v.sub_category = sc.id
+    LEFT JOIN QAFI orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.user_id = $1
-    GROUP BY v.id, u.username, u.image, c.name, sc.name,  c.french_name, sc.french_name
-
+    GROUP BY v.id, u.username, u.image, c.id, sc.id, orig.id, orig_u.id
     LIMIT $2 OFFSET $3;`;
 
     const { rows } = await pool.query(query, [id, perPage, offset]);
 
     return res
       .status(200)
-      .json({ statusCode: 200, totalPages, totalQAFIs, QAFIs: rows });
+      .json({
+        statusCode: 200,
+        totalPages,
+        totalQAFIs,
+        QAFIs: rows.map((row) => {
+          if (row.shared_post_id) {
+            row.original_post = {
+              id: row.shared_post_id,
+              description: row.original_description,
+              image: row.original_image,
+              video: row.original_video,
+              username: row.original_username,
+              user_image: row.original_user_image,
+              created_at: row.original_created_at,
+            };
+          } else {
+            row.original_post = null;
+          }
+          return row;
+        })
+      });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
@@ -699,6 +862,7 @@ export const getAllQafisByCategory = async (req, res) => {
         total_likes: qafi.total_likes,
         shared_post_id: qafi.shared_post_id,
         original_post: qafi.shared_post_id ? {
+          id: qafi.shared_post_id,
           description: qafi.original_description,
           image: qafi.original_image,
           video: qafi.original_video,
@@ -741,6 +905,13 @@ export const getTopQafiWithMostComments = async (req, res) => {
         u.username,
         u.image AS user_image,
         q.created_at,
+        q.shared_post_id,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig.video AS original_video,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at,
         COUNT(DISTINCT c.id) AS comment_count,
         COUNT(DISTINCT l.id) AS total_likes
       FROM QAFI q
@@ -749,7 +920,9 @@ export const getTopQafiWithMostComments = async (req, res) => {
       LEFT JOIN QAFI_sub_category qsc ON q.sub_category = qsc.id
       LEFT JOIN qafi_comment c ON q.id = c.QAFI_id
       LEFT JOIN like_qafi l ON q.id = l.QAFI_id
-      GROUP BY q.id, qc.name, qsc.name, u.username, u.image
+      LEFT JOIN QAFI orig ON q.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+      GROUP BY q.id, qc.name, qsc.name, u.username, u.image, orig.id, orig_u.id
       ORDER BY comment_count DESC
       LIMIT 1;
     `;
@@ -762,10 +935,25 @@ export const getTopQafiWithMostComments = async (req, res) => {
         .json({ statusCode: 404, message: "No QAFI found" });
     }
 
+    const qafiData = result.rows[0];
+    if (qafiData.shared_post_id) {
+      qafiData.original_post = {
+        id: qafiData.shared_post_id,
+        description: qafiData.original_description,
+        image: qafiData.original_image,
+        video: qafiData.original_video,
+        username: qafiData.original_username,
+        user_image: qafiData.original_user_image,
+        created_at: qafiData.original_created_at,
+      };
+    } else {
+      qafiData.original_post = null;
+    }
+
     return res.status(200).json({
       statusCode: 200,
       message: "Top QAFI with the most comments retrieved successfully",
-      data: result.rows[0],
+      data: qafiData,
     });
   } catch (error) {
     console.error(error);
@@ -814,7 +1002,22 @@ export const searchQafi = async (req, res) => {
     return res.status(200).json({
       statusCode: 200,
       totalQAFIs: rows.length,
-      QAFIs: rows,
+      QAFIs: rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            description: row.original_description,
+            image: row.original_image,
+            video: row.original_video,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);
