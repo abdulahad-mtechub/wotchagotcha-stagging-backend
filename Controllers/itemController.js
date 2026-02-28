@@ -94,6 +94,8 @@ export const createItem = async (req, res) => {
         LEFT JOIN users u ON item.user_id = u.id
         LEFT JOIN item_category ic ON item.item_category = ic.id
         LEFT JOIN item_sub_category isc ON item.sub_category = isc.id
+        LEFT JOIN item orig ON item.shared_post_id = orig.id
+        LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE item.id = $1
         GROUP BY
           item.id,
@@ -107,16 +109,35 @@ export const createItem = async (req, res) => {
           item.location,
           item.top_post,
           item.paid_status,
+          item.shared_post_id,
           u.username,
           u.image,
-          ic.name;
+          ic.name,
+          orig.id,
+          orig_u.id;
       `;
 
-      const getData = await pool.query(getQuery, [result.rows[0].id]);
+      const getResult = await pool.query(getQuery, [result.rows[0].id]);
+      const itemData = getResult.rows[0];
+      if (itemData.shared_post_id) {
+        itemData.original_post = {
+          id: itemData.shared_post_id,
+          title: itemData.original_title,
+          description: itemData.original_description,
+          price: itemData.original_price,
+          condition: itemData.original_condition,
+          location: itemData.original_location,
+          username: itemData.original_username,
+          user_image: itemData.original_user_image,
+          created_at: itemData.original_created_at,
+        };
+      } else {
+        itemData.original_post = null;
+      }
       return res.status(201).json({
         statusCode: 201,
         message: "Created successfully",
-        data: getData.rows[0],
+        data: itemData,
       });
     }
     res.status(400).json({ statusCode: 400, message: "Not created" });
@@ -236,6 +257,15 @@ export const updateItem = async (req, res) => {
               item.location,
               item.top_post,
               item.paid_status,
+              item.shared_post_id,
+              orig.title AS original_title,
+              orig.description AS original_description,
+              orig.price AS original_price,
+              orig.condition AS original_condition,
+              orig.location AS original_location,
+              orig_u.username AS original_username,
+              orig_u.image AS original_user_image,
+              orig.created_at AS original_created_at,
               COALESCE(ARRAY_AGG(
                 JSONB_BUILD_OBJECT(
                   'id', ii.id,
@@ -247,6 +277,8 @@ export const updateItem = async (req, res) => {
             LEFT JOIN users u ON item.user_id = u.id
             LEFT JOIN item_category ic ON item.item_category = ic.id
             LEFT JOIN item_sub_category isc ON item.sub_category = isc.id
+            LEFT JOIN item orig ON item.shared_post_id = orig.id
+            LEFT JOIN users orig_u ON orig.user_id = orig_u.id
             WHERE item.id = $1
             GROUP BY
               item.id,
@@ -260,15 +292,34 @@ export const updateItem = async (req, res) => {
               item.location,
               item.top_post,
               item.paid_status,
+              item.shared_post_id,
               u.username,
               u.image,
               ic.name,
-              isc.name;
+              isc.name,
+              orig.id,
+              orig_u.id;
       `;
 
-      const getData = await pool.query(getQuery, [item_id]);
+      const getResult = await pool.query(getQuery, [item_id]);
+      const itemData = getResult.rows[0];
+      if (itemData.shared_post_id) {
+        itemData.original_post = {
+          id: itemData.shared_post_id,
+          title: itemData.original_title,
+          description: itemData.original_description,
+          price: itemData.original_price,
+          condition: itemData.original_condition,
+          location: itemData.original_location,
+          username: itemData.original_username,
+          user_image: itemData.original_user_image,
+          created_at: itemData.original_created_at,
+        };
+      } else {
+        itemData.original_post = null;
+      }
 
-      return res.status(200).json({ statusCode: 200, Item: getData.rows[0] });
+      return res.status(200).json({ statusCode: 200, Item: itemData });
     } else {
       res
         .status(404)
@@ -520,6 +571,15 @@ export const changePaidStatus = async (req, res) => {
        item.location,
        item.top_post,
        item.paid_status,
+       item.shared_post_id,
+       orig.title AS original_title,
+       orig.description AS original_description,
+       orig.price AS original_price,
+       orig.condition AS original_condition,
+       orig.location AS original_location,
+       orig_u.username AS original_username,
+       orig_u.image AS original_user_image,
+       orig.created_at AS original_created_at,
        COALESCE(ARRAY_AGG(
          JSONB_BUILD_OBJECT(
            'id', ii.id,
@@ -530,6 +590,8 @@ export const changePaidStatus = async (req, res) => {
      LEFT JOIN item_images ii ON item.id = ii.item_id
      LEFT JOIN users u ON item.user_id = u.id
      LEFT JOIN item_category ic ON item.item_category = ic.id
+     LEFT JOIN item orig ON item.shared_post_id = orig.id
+     LEFT JOIN users orig_u ON orig.user_id = orig_u.id
      WHERE item.id = $1
      GROUP BY
        item.id,
@@ -544,14 +606,32 @@ export const changePaidStatus = async (req, res) => {
        item.paid_status,
        u.username,
        u.image,
-       ic.name;
+       ic.name,
+       orig.id,
+       orig_u.id;
    `;
 
-    const getData = await pool.query(getQuery, [id]);
+    const getResult = await pool.query(getQuery, [id]);
+    const itemData = getResult.rows[0];
+    if (itemData.shared_post_id) {
+      itemData.original_post = {
+        id: itemData.shared_post_id,
+        title: itemData.original_title,
+        description: itemData.original_description,
+        price: itemData.original_price,
+        condition: itemData.original_condition,
+        location: itemData.original_location,
+        username: itemData.original_username,
+        user_image: itemData.original_user_image,
+        created_at: itemData.original_created_at,
+      };
+    } else {
+      itemData.original_post = null;
+    }
     res.status(200).json({
       statusCode: 200,
       message: "Item status change successfully",
-      item: getData.rows[0],
+      item: itemData,
     });
   } catch (error) {
     console.error(error);
@@ -677,6 +757,7 @@ export const getSpecificItem = async (req, res) => {
     const item = data.rows[0];
     if (item) {
       item.original_post = item.shared_post_id ? {
+        id: item.shared_post_id,
         title: item.original_title,
         description: item.original_description,
         price: item.original_price,
@@ -765,14 +846,8 @@ export const getAllItemByCatgory = async (req, res) => {
           u.username,
           u.image,
           ic.name,
-          orig.title,
-          orig.description,
-          orig.price,
-          orig.condition,
-          orig.location,
-          orig_u.username,
-          orig_u.image,
-          orig.created_at
+          orig.id,
+          orig_u.id
           ORDER BY item.created_at DESC
       `;
 
@@ -788,10 +863,28 @@ export const getAllItemByCatgory = async (req, res) => {
     const data = await pool.query(query, queryParameters);
     if (req.query.page === undefined && req.query.limit === undefined) {
       // If no pagination is applied, don't calculate totalCategories and totalPages
+      const responseRows = data.rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            title: row.original_title,
+            description: row.original_description,
+            price: row.original_price,
+            condition: row.original_condition,
+            location: row.original_location,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      });
       res.status(200).json({
         statusCode: 200,
-        totalItems: data.rows.length,
-        AllItems: data.rows,
+        totalItems: responseRows.length,
+        AllItems: responseRows,
       });
     } else {
       // Calculate the total number of categories (without pagination)
@@ -893,14 +986,8 @@ export const getAllItemsByUser = async (req, res) => {
           u.username,
           u.image,
           ic.name,
-          orig.title,
-          orig.description,
-          orig.price,
-          orig.condition,
-          orig.location,
-          orig_u.username,
-          orig_u.image,
-          orig.created_at
+          orig.id,
+          orig_u.id
           ORDER BY item.created_at DESC
     `;
 
@@ -918,10 +1005,28 @@ export const getAllItemsByUser = async (req, res) => {
 
     if (req.query.page === undefined && req.query.limit === undefined) {
       // If no pagination is applied, don't calculate totalCategories and totalPages
+      const responseRows = rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            title: row.original_title,
+            description: row.original_description,
+            price: row.original_price,
+            condition: row.original_condition,
+            location: row.original_location,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      });
       res.status(200).json({
         statusCode: 200,
-        totalItems: rows.length,
-        AllItems: rows,
+        totalItems: responseRows.length,
+        AllItems: responseRows,
       });
     } else {
       // Calculate the total number of categories (without pagination)
@@ -939,6 +1044,7 @@ export const getAllItemsByUser = async (req, res) => {
         AllItems: rows.map(row => ({
           ...row,
           original_post: row.shared_post_id ? {
+            id: row.shared_post_id,
             title: row.original_title,
             description: row.original_description,
             price: row.original_price,
@@ -1016,14 +1122,8 @@ export const getAllItems = async (req, res) => {
         u.username,
         u.image,
         ic.name,
-        orig.title,
-        orig.description,
-        orig.price,
-        orig.condition,
-        orig.location,
-        orig_u.username,
-        orig_u.image,
-        orig.created_at
+        orig.id,
+        orig_u.id
         ORDER BY item.created_at DESC
     `;
 
@@ -1041,10 +1141,28 @@ export const getAllItems = async (req, res) => {
 
     if (req.query.page === undefined && req.query.limit === undefined) {
       // If no pagination is applied, don't calculate totalCategories and totalPages
+      const responseRows = rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            title: row.original_title,
+            description: row.original_description,
+            price: row.original_price,
+            condition: row.original_condition,
+            location: row.original_location,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      });
       res.status(200).json({
         statusCode: 200,
-        totalItems: rows.length,
-        AllItems: rows,
+        totalItems: responseRows.length,
+        AllItems: responseRows,
       });
     } else {
       // Calculate the total number of categories (without pagination)
@@ -1063,6 +1181,7 @@ export const getAllItems = async (req, res) => {
         AllItems: rows.map(row => ({
           ...row,
           original_post: row.shared_post_id ? {
+            id: row.shared_post_id,
             title: row.original_title,
             description: row.original_description,
             price: row.original_price,
@@ -1140,14 +1259,8 @@ export const getAllItemsByPaid = async (req, res) => {
         u.username,
         u.image,
         ic.name,
-        orig.title,
-        orig.description,
-        orig.price,
-        orig.condition,
-        orig.location,
-        orig_u.username,
-        orig_u.image,
-        orig.created_at
+        orig.id,
+        orig_u.id
         ORDER BY item.created_at DESC
     `;
 
@@ -1165,10 +1278,28 @@ export const getAllItemsByPaid = async (req, res) => {
 
     if (req.query.page === undefined && req.query.limit === undefined) {
       // If no pagination is applied, don't calculate totalCategories and totalPages
+      const responseRows = rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            title: row.original_title,
+            description: row.original_description,
+            price: row.original_price,
+            condition: row.original_condition,
+            location: row.original_location,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      });
       res.status(200).json({
         statusCode: 200,
-        totalItems: rows.length,
-        AllItems: rows,
+        totalItems: responseRows.length,
+        AllItems: responseRows,
       });
     } else {
       // Calculate the total number of categories (without pagination)
@@ -1186,6 +1317,7 @@ export const getAllItemsByPaid = async (req, res) => {
         AllItems: rows.map(row => ({
           ...row,
           original_post: row.shared_post_id ? {
+            id: row.shared_post_id,
             title: row.original_title,
             description: row.original_description,
             price: row.original_price,
@@ -1274,14 +1406,8 @@ export const searchitems = async (req, res) => {
           u.username,
           u.image,
           ic.name,
-          orig.title,
-          orig.description,
-          orig.price,
-          orig.condition,
-          orig.location,
-          orig_u.username,
-          orig_u.image,
-          orig.created_at;
+          orig.id,
+          orig_u.id;
       `;
     const { rows } = await pool.query(getQuery);
     return res
@@ -1290,6 +1416,7 @@ export const searchitems = async (req, res) => {
         statusCode: 200, totalResults: rows.length, letters: rows.map(row => ({
           ...row,
           original_post: row.shared_post_id ? {
+            id: row.shared_post_id,
             title: row.original_title,
             description: row.original_description,
             price: row.original_price,
@@ -1874,14 +2001,8 @@ export const getAllSavedItemsByUser = async (req, res) => {
         u.image,
         ic.name,
         si.id,
-        orig.title,
-        orig.description,
-        orig.price,
-        orig.condition,
-        orig.location,
-        orig_u.username,
-        orig_u.image,
-        orig.created_at
+        orig.id,
+        orig_u.id
     `;
 
     if (req.query.page === undefined && req.query.limit === undefined) {
@@ -1898,10 +2019,28 @@ export const getAllSavedItemsByUser = async (req, res) => {
 
     if (req.query.page === undefined && req.query.limit === undefined) {
       // If no pagination is applied, don't calculate totalCategories and totalPages
+      const responseRows = rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            title: row.original_title,
+            description: row.original_description,
+            price: row.original_price,
+            condition: row.original_condition,
+            location: row.original_location,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      });
       res.status(200).json({
         statusCode: 200,
-        totalItems: rows.length,
-        AllSavedItems: rows,
+        totalItems: responseRows.length,
+        AllSavedItems: responseRows,
       });
     } else {
       // Calculate the total number of categories (without pagination)
@@ -1917,6 +2056,7 @@ export const getAllSavedItemsByUser = async (req, res) => {
         AllSavedItems: rows.map(row => ({
           ...row,
           original_post: row.shared_post_id ? {
+            id: row.shared_post_id,
             title: row.original_title,
             description: row.original_description,
             price: row.original_price,
@@ -2012,14 +2152,8 @@ export const searchSaveItems = async (req, res) => {
         u.image,
         ic.name,
         si.id,
-        orig.title,
-        orig.description,
-        orig.price,
-        orig.condition,
-        orig.location,
-        orig_u.username,
-        orig_u.image,
-        orig.created_at
+        orig.id,
+        orig_u.id
     `;
     const { rows } = await pool.query(getQuery, [id]);
     return res
@@ -2028,6 +2162,7 @@ export const searchSaveItems = async (req, res) => {
         statusCode: 200, totalResults: rows.length, items: rows.map(row => ({
           ...row,
           original_post: row.shared_post_id ? {
+            id: row.shared_post_id,
             title: row.original_title,
             description: row.original_description,
             price: row.original_price,

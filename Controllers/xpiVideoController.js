@@ -67,21 +67,47 @@ export const createXpiVideo = async (req, res) => {
           v.video,
           v.created_at AS tour_created_at,
           v.user_id,
+          v.shared_post_id,
           u.username AS username,
-          u.image AS user_image
+          u.image AS user_image,
+          orig.name AS original_name,
+          orig.description AS original_description,
+          orig.video AS original_video,
+          orig.thumbnail AS original_thumbnail,
+          orig_u.username AS original_username,
+          orig_u.image AS original_user_image,
+          orig.created_at AS original_created_at
         FROM xpi_videos v
         JOIN users u ON v.user_id = u.id
         LEFT JOIN video_category vc ON v.video_category = vc.id
         LEFT JOIN video_sub_category vsc ON v.sub_category = vsc.id
+        LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
+        LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE v.id = $1
-        GROUP BY v.id, u.username, u.image, vc.name, vsc.name`;
+        GROUP BY v.id, u.username, u.image, vc.name, vsc.name, orig.id, orig_u.id`;
 
       const data = await pool.query(query, [result.rows[0].id]);
+
+      const videoData = data.rows[0];
+      if (videoData.shared_post_id) {
+        videoData.original_post = {
+          id: videoData.shared_post_id,
+          name: videoData.original_name,
+          description: videoData.original_description,
+          video: videoData.original_video,
+          thumbnail: videoData.original_thumbnail,
+          username: videoData.original_username,
+          user_image: videoData.original_user_image,
+          created_at: videoData.original_created_at,
+        };
+      } else {
+        videoData.original_post = null;
+      }
 
       return res.status(201).json({
         statusCode: 201,
         message: "Xpi video uploaded successfully",
-        data: data.rows[0],
+        data: videoData,
       });
     }
 
@@ -229,20 +255,46 @@ export const updateXpiVideo = async (req, res) => {
           v.thumbnail,
           v.created_at AS tour_created_at,
           v.user_id,
+          v.shared_post_id,
           u.username AS username,
-          u.image AS user_image
+          u.image AS user_image,
+          orig.name AS original_name,
+          orig.description AS original_description,
+          orig.video AS original_video,
+          orig.thumbnail AS original_thumbnail,
+          orig_u.username AS original_username,
+          orig_u.image AS original_user_image,
+          orig.created_at AS original_created_at
         FROM xpi_videos v
         JOIN users u ON v.user_id = u.id
         LEFT JOIN video_category vc ON v.video_category = vc.id
         LEFT JOIN video_sub_category vsc ON v.sub_category = vsc.id
+        LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
+        LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE v.id = $1
-        GROUP BY v.id, u.username, u.image, vc.name, vsc.name`;
+        GROUP BY v.id, u.username, u.image, vc.name, vsc.name, orig.id, orig_u.id`;
 
       const data = await pool.query(query, [result.rows[0].id]);
 
+      const videoData = data.rows[0];
+      if (videoData.shared_post_id) {
+        videoData.original_post = {
+          id: videoData.shared_post_id,
+          name: videoData.original_name,
+          description: videoData.original_description,
+          video: videoData.original_video,
+          thumbnail: videoData.original_thumbnail,
+          username: videoData.original_username,
+          user_image: videoData.original_user_image,
+          created_at: videoData.original_created_at,
+        };
+      } else {
+        videoData.original_post = null;
+      }
+
       return res
         .status(200)
-        .json({ statusCode: 200, updateXpiVideo: data.rows[0] });
+        .json({ statusCode: 200, updateXpiVideo: videoData });
     } else {
       res
         .status(404)
@@ -645,7 +697,15 @@ export const getSpecificVideo = async (req, res) => {
         ) AS comment_count,
         (
           SELECT count(*) FROM like_video lv WHERE lv.video_id = v.id
-        ) AS like_count
+        ) AS like_count,
+        v.shared_post_id,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.video AS original_video,
+        orig.thumbnail AS original_thumbnail,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
     `;
 
     if (user_id) {
@@ -657,7 +717,9 @@ export const getSpecificVideo = async (req, res) => {
       FROM xpi_videos v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN video_category vc ON v.video_category = vc.id
-      LEFT JOIN video_sub_category vsc ON v.sub_category = vsc.id`;
+      LEFT JOIN video_sub_category vsc ON v.sub_category = vsc.id
+      LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id`;
 
     if (user_id) {
       sqlQuery += `
@@ -666,7 +728,7 @@ export const getSpecificVideo = async (req, res) => {
 
     sqlQuery += `
       WHERE v.id = $1 AND u.is_deleted = FALSE
-      GROUP BY v.id, u.username, u.image, vc.name, vsc.name, vc.french_name, vsc.french_name`;
+      GROUP BY v.id, u.username, u.image, vc.name, vsc.name, vc.french_name, vsc.french_name, orig.id, orig_u.id`;
 
     if (user_id) {
       sqlQuery += `, pl.id`;
@@ -680,7 +742,22 @@ export const getSpecificVideo = async (req, res) => {
     const { rows } = await pool.query(sqlQuery, queryParams);
 
     if (rows.length > 0) {
-      return res.status(200).json({ statusCode: 200, Video: rows[0] });
+      const videoData = rows[0];
+      if (videoData.shared_post_id) {
+        videoData.original_post = {
+          id: videoData.shared_post_id,
+          name: videoData.original_name,
+          description: videoData.original_description,
+          video: videoData.original_video,
+          thumbnail: videoData.original_thumbnail,
+          username: videoData.original_username,
+          user_image: videoData.original_user_image,
+          created_at: videoData.original_created_at,
+        };
+      } else {
+        videoData.original_post = null;
+      }
+      return res.status(200).json({ statusCode: 200, Video: videoData });
     } else {
       return res
         .status(404)
@@ -774,13 +851,24 @@ export const getAllVideos = async (req, res) => {
         v.thumbnail,
         v.created_at AS video_created_at,
         v.user_id,
+        v.shared_post_id,
         u.username AS username,
-        u.image AS userImage
+        u.image AS userImage,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.video AS original_video,
+        orig.thumbnail AS original_thumbnail,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
       FROM xpi_videos v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN video_category vc ON v.video_category = vc.id
       LEFT JOIN video_sub_category vsc ON v.sub_category = vsc.id
+      LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE u.is_deleted = FALSE
+      GROUP BY v.id, u.username, u.image, vc.name, vsc.name, vc.french_name, vsc.french_name, orig.id, orig_u.id
       ORDER BY v.created_at DESC
     `;
 
@@ -796,12 +884,30 @@ export const getAllVideos = async (req, res) => {
 
     const { rows } = await pool.query(query, queryParameters);
 
+    const formattedRows = rows.map((row) => {
+      if (row.shared_post_id) {
+        row.original_post = {
+          id: row.shared_post_id,
+          name: row.original_name,
+          description: row.original_description,
+          video: row.original_video,
+          thumbnail: row.original_thumbnail,
+          username: row.original_username,
+          user_image: row.original_user_image,
+          created_at: row.original_created_at,
+        };
+      } else {
+        row.original_post = null;
+      }
+      return row;
+    });
+
     if (req.query.page === undefined && req.query.limit === undefined) {
       // If no pagination is applied, don't calculate totalVideos and totalPages
       res.status(200).json({
         statusCode: 200,
-        totalVideos: rows.length,
-        AllVideos: rows,
+        totalVideos: formattedRows.length,
+        AllVideos: formattedRows,
       });
     } else {
       // Calculate the total number of videos (without pagination)
@@ -818,7 +924,7 @@ export const getAllVideos = async (req, res) => {
         statusCode: 200,
         totalVideos,
         totalPages,
-        AllVideos: rows,
+        AllVideos: formattedRows,
       });
     }
   } catch (error) {
@@ -916,13 +1022,23 @@ export const getAllVideosByUser = async (req, res) => {
         v.created_at AS video_created_at,
         v.user_id,
         u.username AS username,
-        u.image AS userImage
+        u.image AS userImage,
+        v.shared_post_id,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.video AS original_video,
+        orig.thumbnail AS original_thumbnail,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
       FROM xpi_videos v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN video_category vc ON v.video_category = vc.id
       LEFT JOIN video_sub_category vsc ON v.sub_category = vsc.id
+      LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.user_id = $1
-      GROUP BY v.id, u.username, u.image, vc.name, vsc.name, vc.french_name, vsc.french_name
+      GROUP BY v.id, u.username, u.image, vc.name, vsc.name, vc.french_name, vsc.french_name, orig.id, orig_u.id
       LIMIT $2 OFFSET $3;
     `;
 
@@ -932,7 +1048,23 @@ export const getAllVideosByUser = async (req, res) => {
       statusCode: 200,
       totalPages,
       totalVideos,
-      Videos: rows,
+      Videos: rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            video: row.original_video,
+            thumbnail: row.original_thumbnail,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);
@@ -1051,6 +1183,7 @@ export const getAllVideosByCategory = async (req, res) => {
         total_likes: row.total_likes,
         shared_post_id: row.shared_post_id,
         original_post: row.shared_post_id ? {
+          id: row.shared_post_id,
           name: row.original_name,
           description: row.original_description,
           video: row.original_video,
@@ -1120,6 +1253,14 @@ export const getMostViewedVideosByCategory = async (req, res) => {
         v.user_id,
         u.username AS username,
         u.image AS userImage,
+        v.shared_post_id,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.video AS original_video,
+        orig.thumbnail AS original_thumbnail,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at,
         COUNT(vv.video_id) AS view_count,
         (
           SELECT COALESCE(json_agg(
@@ -1155,8 +1296,10 @@ export const getMostViewedVideosByCategory = async (req, res) => {
       LEFT JOIN viewed_video vv ON v.id = vv.video_id
       LEFT JOIN video_category vc ON v.video_category = vc.id
       LEFT JOIN video_sub_category vsc ON v.sub_category = vsc.id
+      LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.video_category = $1 AND u.is_deleted = FALSE
-      GROUP BY v.id, u.username, u.image, vc.name, vsc.name, vc.french_name, vsc.french_name
+      GROUP BY v.id, u.username, u.image, vc.name, vsc.name, vc.french_name, vsc.french_name, orig.id, orig_u.id
       ORDER BY view_count DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -1167,7 +1310,23 @@ export const getMostViewedVideosByCategory = async (req, res) => {
       statusCode: 200,
       totalPages,
       totalVideos,
-      Videos: rows,
+      Videos: rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            video: row.original_video,
+            thumbnail: row.original_thumbnail,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);
@@ -1204,6 +1363,14 @@ export const getAllTrendingVideosByCategory = async (req, res) => {
       v.user_id,
       u.username AS username,
       u.image AS userImage,
+      v.shared_post_id,
+      orig.name AS original_name,
+      orig.description AS original_description,
+      orig.video AS original_video,
+      orig.thumbnail AS original_thumbnail,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at,
       (SELECT COUNT(*) FROM like_video lv WHERE lv.video_id = v.id) AS like_count,
       (SELECT COUNT(*) FROM video_comment c WHERE c.video_id = v.id) AS comment_count,
       (SELECT COUNT(*) FROM viewed_video vv WHERE vv.video_id = v.id) AS view_count
@@ -1214,8 +1381,10 @@ export const getAllTrendingVideosByCategory = async (req, res) => {
     LEFT JOIN viewed_video vv ON v.id = vv.video_id
     LEFT JOIN video_comment c ON v.id = c.video_id
     LEFT JOIN video_category vc ON v.video_category = vc.id
+    LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.video_category = $1 AND u.is_deleted=FALSE
-    GROUP BY v.id, u.username, u.image,vc.name, vc.french_name
+    GROUP BY v.id, u.username, u.image,vc.name, vc.french_name, orig.id, orig_u.id
     ORDER BY  view_count DESC,video_created_at DESC
     LIMIT $2 OFFSET $3;
     
@@ -1225,7 +1394,28 @@ export const getAllTrendingVideosByCategory = async (req, res) => {
 
     return res
       .status(200)
-      .json({ statusCode: 200, totalPages, totalVideos, Videos: rows });
+      .json({
+        statusCode: 200,
+        totalPages,
+        totalVideos,
+        Videos: rows.map((row) => {
+          if (row.shared_post_id) {
+            row.original_post = {
+              id: row.shared_post_id,
+              name: row.original_name,
+              description: row.original_description,
+              video: row.original_video,
+              thumbnail: row.original_thumbnail,
+              username: row.original_username,
+              user_image: row.original_user_image,
+              created_at: row.original_created_at,
+            };
+          } else {
+            row.original_post = null;
+          }
+          return row;
+        })
+      });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
@@ -1262,11 +1452,21 @@ export const getAllRecentVideosByCategory = async (req, res) => {
             v.created_at AS video_created_at,
             v.user_id,
             u.username AS username,
-            u.image AS userImage
+            u.image AS userImage,
+            v.shared_post_id,
+            orig.name AS original_name,
+            orig.description AS original_description,
+            orig.video AS original_video,
+            orig.thumbnail AS original_thumbnail,
+            orig_u.username AS original_username,
+            orig_u.image AS original_user_image,
+            orig.created_at AS original_created_at
            
         FROM xpi_videos v
         JOIN users u ON v.user_id = u.id
         LEFT JOIN video_category vc ON v.video_category = vc.id
+        LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
+        LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE v.video_category=$3 AND u.is_deleted=FALSE
         ORDER BY v.created_at DESC
         LIMIT $1 OFFSET $2;`;
@@ -1277,7 +1477,23 @@ export const getAllRecentVideosByCategory = async (req, res) => {
       statusCode: 200,
       totalPages,
       totalVideos,
-      Videos: rows,
+      Videos: rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            video: row.original_video,
+            thumbnail: row.original_thumbnail,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);
@@ -1318,14 +1534,24 @@ export const getComentedVideos = async (req, res) => {
         v.user_id,
         u.username AS username,
         u.image AS userImage,
+        v.shared_post_id,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.video AS original_video,
+        orig.thumbnail AS original_thumbnail,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at,
         COUNT(c.id) AS comment_count
       FROM xpi_videos v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN video_comment c ON v.id = c.video_id
       LEFT JOIN video_category vc ON v.video_category = vc.id
       LEFT JOIN video_sub_category vsc ON v.sub_category = vsc.id
+      LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.video_category = $1 AND u.is_deleted = FALSE
-      GROUP BY v.id, u.username, u.image, vc.name, vsc.name, vc.french_name , vsc.french_name
+      GROUP BY v.id, u.username, u.image, vc.name, vsc.name, vc.french_name , vsc.french_name, orig.id, orig_u.id
       ORDER BY comment_count DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -1336,7 +1562,23 @@ export const getComentedVideos = async (req, res) => {
       statusCode: 200,
       totalPages,
       totalVideos,
-      Videos: rows,
+      Videos: rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            video: row.original_video,
+            thumbnail: row.original_thumbnail,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);
@@ -1420,12 +1662,22 @@ export const searchVideos = async (req, res) => {
           v.created_at AS video_created_at,
           v.user_id,
           u.username AS username,
-          u.image AS userImage
+          u.image AS userImage,
+          v.shared_post_id,
+          orig.name AS original_name,
+          orig.description AS original_description,
+          orig.video AS original_video,
+          orig.thumbnail AS original_thumbnail,
+          orig_u.username AS original_username,
+          orig_u.image AS original_user_image,
+          orig.created_at AS original_created_at
          
       FROM xpi_videos v
 
       JOIN users u ON v.user_id = u.id
       LEFT JOIN video_category vc ON v.video_category = vc.id
+      LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE ${conditions.join(" OR ")} AND u.is_deleted=FALSE
       ORDER BY v.created_at DESC`;
 
@@ -1453,7 +1705,23 @@ export const searchVideos = async (req, res) => {
     return res.status(200).json({
       statusCode: 200,
       totalVideos: rows.length,
-      Videos: rows,
+      Videos: rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            video: row.original_video,
+            thumbnail: row.original_thumbnail,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);
@@ -1498,20 +1766,45 @@ export const createTopVideo = async (req, res) => {
         v.created_at AS video_created_at,
         v.user_id,
         u.username AS username,
-        u.image AS userImage
+        u.image AS userImage,
+        v.shared_post_id,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.video AS original_video,
+        orig.thumbnail AS original_thumbnail,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
        
     FROM xpi_videos v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN video_category vc ON v.video_category = vc.id
+    LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.id = $1
-    GROUP BY v.id, u.username, u.image,vc.name
+    GROUP BY v.id, u.username, u.image,vc.name, orig.id, orig_u.id
      `;
 
       const { rows } = await pool.query(query, [video_id]);
+      const videoData = rows[0];
+      if (videoData.shared_post_id) {
+        videoData.original_post = {
+          id: videoData.shared_post_id,
+          name: videoData.original_name,
+          description: videoData.original_description,
+          video: videoData.original_video,
+          thumbnail: videoData.original_thumbnail,
+          username: videoData.original_username,
+          user_image: videoData.original_user_image,
+          created_at: videoData.original_created_at,
+        };
+      } else {
+        videoData.original_post = null;
+      }
       return res.status(200).json({
         statusCode: 201,
         message: "Video goes to top successfully",
-        data: rows[0],
+        data: videoData,
       });
     } else {
       res
@@ -1536,12 +1829,23 @@ export const getTopVideo = async (req, res) => {
           v.created_at AS video_created_at,
           v.user_id,
           u.username AS username,
-          u.image AS userImage
+          u.image AS userImage,
+          v.shared_post_id,
+          orig.name AS original_name,
+          orig.description AS original_description,
+          orig.video AS original_video,
+          orig.thumbnail AS original_thumbnail,
+          orig_u.username AS original_username,
+          orig_u.image AS original_user_image,
+          orig.created_at AS original_created_at
          
       FROM xpi_videos v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN video_category vc ON v.video_category = vc.id
+      LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE top=$1
+      GROUP BY v.id, u.username, u.image, vc.name, orig.id, orig_u.id
       ORDER BY v.created_at DESC
      `;
 
@@ -1549,7 +1853,23 @@ export const getTopVideo = async (req, res) => {
 
     return res.status(200).json({
       statusCode: 200,
-      topVideo: rows,
+      topVideo: rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            video: row.original_video,
+            thumbnail: row.original_thumbnail,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);

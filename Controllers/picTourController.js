@@ -38,21 +38,45 @@ export const createPicTour = async (req, res) => {
           v.image,
           v.created_at AS tour_created_at,
           v.user_id,
+          v.shared_post_id,
           u.username AS username,
-          u.image AS userImage
+          u.image AS userImage,
+          orig.name AS original_name,
+          orig.description AS original_description,
+          orig.image AS original_image,
+          orig_u.username AS original_username,
+          orig_u.image AS original_user_image,
+          orig.created_at AS original_created_at
         FROM pic_tours v
         JOIN users u ON v.user_id = u.id
         LEFT JOIN pic_category pc ON v.pic_category = pc.id
         LEFT JOIN pic_sub_category psc ON v.sub_category = psc.id
+        LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
+        LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE v.id = $1
-        GROUP BY v.id, u.username, u.image, pc.name, psc.name`;
+        GROUP BY v.id, u.username, u.image, pc.name, psc.name, orig.id, orig_u.id`;
 
       const data = await pool.query(query, [result.rows[0].id]);
+
+      const tourData = data.rows[0];
+      if (tourData.shared_post_id) {
+        tourData.original_post = {
+          id: tourData.shared_post_id,
+          name: tourData.original_name,
+          description: tourData.original_description,
+          image: tourData.original_image,
+          username: tourData.original_username,
+          user_image: tourData.original_user_image,
+          created_at: tourData.original_created_at,
+        };
+      } else {
+        tourData.original_post = null;
+      }
 
       return res.status(201).json({
         statusCode: 201,
         message: "Pic tour uploaded successfully",
-        data: data.rows[0],
+        data: tourData,
       });
     }
 
@@ -177,21 +201,45 @@ export const updatePicTour = async (req, res) => {
           v.image,
           v.created_at AS tour_created_at,
           v.user_id,
+          v.shared_post_id,
           u.username AS username,
-          u.image AS userImage
+          u.image AS userImage,
+          orig.name AS original_name,
+          orig.description AS original_description,
+          orig.image AS original_image,
+          orig_u.username AS original_username,
+          orig_u.image AS original_user_image,
+          orig.created_at AS original_created_at
         FROM pic_tours v
         JOIN users u ON v.user_id = u.id
         LEFT JOIN pic_category pc ON v.pic_category = pc.id
         LEFT JOIN pic_sub_category psc ON v.sub_category = psc.id
+        LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
+        LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE v.id = $1
-        GROUP BY v.id, u.username, u.image, pc.name, psc.name`;
+        GROUP BY v.id, u.username, u.image, pc.name, psc.name, orig.id, orig_u.id`;
 
       const data = await pool.query(query, [result.rows[0].id]);
+
+      const tourData = data.rows[0];
+      if (tourData.shared_post_id) {
+        tourData.original_post = {
+          id: tourData.shared_post_id,
+          name: tourData.original_name,
+          description: tourData.original_description,
+          image: tourData.original_image,
+          username: tourData.original_username,
+          user_image: tourData.original_user_image,
+          created_at: tourData.original_created_at,
+        };
+      } else {
+        tourData.original_post = null;
+      }
 
       return res.status(200).json({
         statusCode: 200,
         message: "Pic Tour updated successfully",
-        updatePicTour: data.rows[0],
+        updatePicTour: tourData,
       });
     } else {
       res
@@ -618,7 +666,14 @@ export const getSpecificPicTour = async (req, res) => {
           FROM like_pic lv
           JOIN users lu ON lv.user_id = lu.id 
           WHERE lv.pic_tours_id = v.id 
-        ) AS likes`;
+        ) AS likes,
+        v.shared_post_id,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at`;
 
     if (user_id) {
       sqlQuery += `,
@@ -629,7 +684,9 @@ export const getSpecificPicTour = async (req, res) => {
       FROM pic_tours v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN pic_category pc ON v.pic_category = pc.id
-      LEFT JOIN pic_sub_category psc ON v.sub_category = psc.id`;
+      LEFT JOIN pic_sub_category psc ON v.sub_category = psc.id
+      LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id`;
 
     if (user_id) {
       sqlQuery += `
@@ -638,7 +695,7 @@ export const getSpecificPicTour = async (req, res) => {
 
     sqlQuery += `
       WHERE v.id = $1 AND u.is_deleted = FALSE
-      GROUP BY v.id, u.username, u.image, pc.name, psc.name , pc.french_name, psc.french_name`;
+      GROUP BY v.id, u.username, u.image, pc.name, psc.name , pc.french_name, psc.french_name, orig.id, orig_u.id`;
 
     if (user_id) {
       sqlQuery += `, pl.id`;
@@ -653,7 +710,21 @@ export const getSpecificPicTour = async (req, res) => {
     const { rows } = await pool.query(sqlQuery, queryParams);
 
     if (rows.length > 0) {
-      return res.status(200).json({ statusCode: 200, picTour: rows[0] });
+      const tourData = rows[0];
+      if (tourData.shared_post_id) {
+        tourData.original_post = {
+          id: tourData.shared_post_id,
+          name: tourData.original_name,
+          description: tourData.original_description,
+          image: tourData.original_image,
+          username: tourData.original_username,
+          user_image: tourData.original_user_image,
+          created_at: tourData.original_created_at,
+        };
+      } else {
+        tourData.original_post = null;
+      }
+      return res.status(200).json({ statusCode: 200, picTour: tourData });
     } else {
       return res
         .status(404)
@@ -692,13 +763,23 @@ export const getAllPicTour = async (req, res) => {
         v.image,
         v.created_at AS tour_created_at,
         v.user_id,
+        v.shared_post_id,
         u.username AS username,
-        u.image AS userImage
+        u.image AS userImage,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
       FROM pic_tours v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN pic_category pc ON v.pic_category = pc.id
       LEFT JOIN pic_sub_category psc ON v.sub_category = psc.id
+      LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE u.is_deleted = FALSE
+      GROUP BY v.id, u.username, u.image, pc.name, psc.name, orig.id, orig_u.id
       ORDER BY v.created_at DESC
       LIMIT $1 OFFSET $2;
     `;
@@ -709,7 +790,22 @@ export const getAllPicTour = async (req, res) => {
       statusCode: 200,
       totalPages,
       totalTours,
-      Tours: rows,
+      Tours: rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            image: row.original_image,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);
@@ -753,13 +849,22 @@ export const getAllPicToursByUser = async (req, res) => {
         v.created_at AS tour_created_at,
         v.user_id,
         u.username AS username,
-        u.image AS userImage
+        u.image AS userImage,
+        v.shared_post_id,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
       FROM pic_tours v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN pic_category pc ON v.pic_category = pc.id
       LEFT JOIN pic_sub_category psc ON v.sub_category = psc.id
+      LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.user_id = $1
-      GROUP BY v.id, u.username, u.image, pc.name, psc.name, pc.french_name, psc.french_name
+      GROUP BY v.id, u.username, u.image, pc.name, psc.name, pc.french_name, psc.french_name, orig.id, orig_u.id
       ORDER BY v.created_at DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -768,7 +873,27 @@ export const getAllPicToursByUser = async (req, res) => {
 
     return res
       .status(200)
-      .json({ statusCode: 200, totalPages, totalTours, Tours: rows });
+      .json({
+        statusCode: 200,
+        totalPages,
+        totalTours,
+        Tours: rows.map((row) => {
+          if (row.shared_post_id) {
+            row.original_post = {
+              id: row.shared_post_id,
+              name: row.original_name,
+              description: row.original_description,
+              image: row.original_image,
+              username: row.original_username,
+              user_image: row.original_user_image,
+              created_at: row.original_created_at,
+            };
+          } else {
+            row.original_post = null;
+          }
+          return row;
+        })
+      });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
@@ -803,13 +928,23 @@ export const getAllRecentToursByCategory = async (req, res) => {
         v.image,
         v.created_at AS tour_created_at,
         v.user_id,
+        v.shared_post_id,
         u.username AS username,
-        u.image AS userImage
+        u.image AS userImage,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
       FROM pic_tours v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN pic_category pc ON v.pic_category = pc.id
       LEFT JOIN pic_sub_category psc ON v.sub_category = psc.id
+      LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.pic_category = $3 AND u.is_deleted = FALSE
+      GROUP BY v.id, u.username, u.image, pc.name, psc.name, orig.id, orig_u.id
       ORDER BY v.created_at DESC
       LIMIT $1 OFFSET $2;
     `;
@@ -820,7 +955,22 @@ export const getAllRecentToursByCategory = async (req, res) => {
       statusCode: 200,
       totalPages,
       totalTours,
-      Tours: rows,
+      Tours: rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            image: row.original_image,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);
@@ -924,6 +1074,7 @@ export const getAllPicTourByCategory = async (req, res) => {
         total_likes: row.total_likes,
         shared_post_id: row.shared_post_id,
         original_post: row.shared_post_id ? {
+          id: row.shared_post_id,
           name: row.original_name,
           description: row.original_description,
           image: row.original_image,
@@ -988,14 +1139,23 @@ export const getMostViewedToursByCategory = async (req, res) => {
         v.user_id,
         u.username AS username,
         u.image AS userImage,
+        v.shared_post_id,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at,
         COUNT(vv.pic_tours_id) AS view_count
       FROM pic_tours v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN viewed_pic vv ON v.id = vv.pic_tours_id
       LEFT JOIN pic_category pc ON v.pic_category = pc.id
       LEFT JOIN pic_sub_category psc ON v.sub_category = psc.id
+      LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.pic_category = $1 AND u.is_deleted = FALSE
-      GROUP BY v.id, u.username, u.image, pc.name, psc.name
+      GROUP BY v.id, u.username, u.image, pc.name, psc.name, orig.id, orig_u.id
       ORDER BY view_count DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -1006,7 +1166,22 @@ export const getMostViewedToursByCategory = async (req, res) => {
       statusCode: 200,
       totalPages,
       totalTours,
-      Tours: rows,
+      Tours: rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            image: row.original_image,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);
@@ -1045,18 +1220,24 @@ export const getAllTrendingToursByCategory = async (req, res) => {
         v.user_id,
         u.username AS username,
         u.image AS userImage,
+        v.shared_post_id,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at,
         (SELECT COUNT(*) FROM like_pic lv WHERE lv.pic_tours_id = v.id) AS like_count,
         (SELECT COUNT(*) FROM pic_comment c WHERE c.pic_tours_id = v.id) AS comment_count,
         (SELECT COUNT(*) FROM viewed_pic vv WHERE vv.pic_tours_id = v.id) AS view_count
       FROM pic_tours v
       JOIN users u ON v.user_id = u.id
-      LEFT JOIN like_pic lv ON v.id = lv.pic_tours_id
-      LEFT JOIN viewed_pic vv ON v.id = vv.pic_tours_id
-      LEFT JOIN pic_comment c ON v.id = c.pic_tours_id
       LEFT JOIN pic_category pc ON v.pic_category = pc.id
       LEFT JOIN pic_sub_category psc ON v.sub_category = psc.id
+      LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.pic_category = $1 AND u.is_deleted = FALSE
-      GROUP BY v.id, u.username, u.image, pc.name, psc.name
+      GROUP BY v.id, u.username, u.image, pc.name, psc.name, orig.id, orig_u.id
       ORDER BY view_count DESC, v.created_at DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -1067,7 +1248,22 @@ export const getAllTrendingToursByCategory = async (req, res) => {
       statusCode: 200,
       totalPages,
       totalTours,
-      Tours: rows,
+      Tours: rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            image: row.original_image,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);
@@ -1105,14 +1301,23 @@ export const getComentedTours = async (req, res) => {
         v.user_id,
         u.username AS username,
         u.image AS userImage,
+        v.shared_post_id,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at,
         COUNT(c.id) AS comment_count
       FROM pic_tours v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN pic_comment c ON v.id = c.pic_tours_id
       LEFT JOIN pic_category pc ON v.pic_category = pc.id
       LEFT JOIN pic_sub_category psc ON v.sub_category = psc.id
+      LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.pic_category = $1 AND u.is_deleted = FALSE
-      GROUP BY v.id, u.username, u.image, pc.name, psc.name
+      GROUP BY v.id, u.username, u.image, pc.name, psc.name, orig.id, orig_u.id
       ORDER BY comment_count DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -1123,7 +1328,22 @@ export const getComentedTours = async (req, res) => {
       statusCode: 200,
       totalPages,
       totalTours,
-      Tours: rows,
+      Tours: rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            image: row.original_image,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);
@@ -1194,11 +1414,21 @@ export const searchTour = async (req, res) => {
     v.image,
     v.created_at AS tour_created_at,
     v.user_id,
+    v.shared_post_id,
     u.username AS username,
-    u.image AS userImage
+    u.image AS userImage,
+    orig.name AS original_name,
+    orig.description AS original_description,
+    orig.image AS original_image,
+    orig_u.username AS original_username,
+    orig_u.image AS original_user_image,
+    orig.created_at AS original_created_at
         FROM pic_tours v
         JOIN users u ON v.user_id = u.id
+        LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
+        LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE ${conditions.join(" OR ")} AND u.is_deleted=FALSE
+        GROUP BY v.id, u.username, u.image, orig.id, orig_u.id
         ORDER BY v.created_at DESC
         `;
 
@@ -1207,7 +1437,22 @@ export const searchTour = async (req, res) => {
     return res.status(200).json({
       statusCode: 200,
       totalTours: rows.length,
-      Tours: rows,
+      Tours: rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            image: row.original_image,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);

@@ -48,24 +48,48 @@ export const create = async (req, res) => {
         vc.name AS category_name,
         vsc.name AS sub_category_name,
         v.user_id AS user_id,
+        v.shared_post_id,
         u.username AS username,
         u.image AS userImage,
-        v.created_at AS created_at
-        
+        v.created_at AS created_at,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.video AS original_video,
+        orig.thumbnail AS original_thumbnail,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
     FROM learning_hobbies_videos v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN learning_hobbies_category vc ON v.category_id = vc.id
     LEFT JOIN learning_hobbies_sub_category vsc ON v.sub_category_id = vsc.id
+    LEFT JOIN learning_hobbies_videos orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.id = $1
-    GROUP BY v.id, u.username, u.image,vc.name, vsc.name;
+    GROUP BY v.id, u.username, u.image, vc.name, vsc.name, orig.id, orig_u.id;
     
      
      `;
       const data = await pool.query(query, [result.rows[0].id]);
+      const videoData = data.rows[0];
+      if (videoData.shared_post_id) {
+        videoData.original_post = {
+          id: videoData.shared_post_id,
+          name: videoData.original_name,
+          description: videoData.original_description,
+          video: videoData.original_video,
+          thumbnail: videoData.original_thumbnail,
+          username: videoData.original_username,
+          user_image: videoData.original_user_image,
+          created_at: videoData.original_created_at,
+        };
+      } else {
+        videoData.original_post = null;
+      }
       return res.status(201).json({
         statusCode: 201,
         message: " video created successfully",
-        data: data.rows[0],
+        data: videoData,
       });
     }
   } catch (error) {
@@ -143,23 +167,47 @@ export const update = async (req, res) => {
         vc.name AS category_name,
         vsc.name AS sub_category_name,
         v.user_id AS user_id,
+        v.shared_post_id,
         u.username AS username,
         u.image AS userImage,
-        v.created_at AS created_at
-        
+        v.created_at AS created_at,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.video AS original_video,
+        orig.thumbnail AS original_thumbnail,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
     FROM learning_hobbies_videos v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN learning_hobbies_category vc ON v.category_id = vc.id
     LEFT JOIN learning_hobbies_sub_category vsc ON v.sub_category_id = vsc.id
+    LEFT JOIN learning_hobbies_videos orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.id = $1
-    GROUP BY v.id, u.username, u.image,vc.name, vsc.name;
+    GROUP BY v.id, u.username, u.image, vc.name, vsc.name, orig.id, orig_u.id;
     
      `;
       const data = await pool.query(query, [result.rows[0].id]);
+      const videoData = data.rows[0];
+      if (videoData.shared_post_id) {
+        videoData.original_post = {
+          id: videoData.shared_post_id,
+          name: videoData.original_name,
+          description: videoData.original_description,
+          video: videoData.original_video,
+          thumbnail: videoData.original_thumbnail,
+          username: videoData.original_username,
+          user_image: videoData.original_user_image,
+          created_at: videoData.original_created_at,
+        };
+      } else {
+        videoData.original_post = null;
+      }
       return res.status(200).json({
         statusCode: 200,
         message: "video updated successfully",
-        data: data.rows[0],
+        data: videoData,
       });
     }
   } catch (error) {
@@ -341,6 +389,14 @@ SELECT
   u.username,
   u.image AS user_image,
   v.created_at,
+  v.shared_post_id,
+  orig.name AS original_name,
+  orig.description AS original_description,
+  orig.video AS original_video,
+  orig.thumbnail AS original_thumbnail,
+  orig_u.username AS original_username,
+  orig_u.image AS original_user_image,
+  orig.created_at AS original_created_at,
   COUNT(DISTINCT c.id) AS comment_count,
   COUNT(DISTINCT l.id) AS total_likes
 FROM learning_hobbies_videos v
@@ -349,7 +405,9 @@ LEFT JOIN learning_hobbies_category vc ON v.category_id = vc.id
 LEFT JOIN learning_hobbies_sub_category vsc ON v.sub_category_id = vsc.id
 LEFT JOIN learning_hobbies_video_comment c ON v.id = c.video_id
 LEFT JOIN learning_hobbies_video_like l ON v.id = l.video_id
-GROUP BY v.id, vc.name, vsc.name, u.username, u.image
+LEFT JOIN learning_hobbies_videos orig ON v.shared_post_id = orig.id
+LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+GROUP BY v.id, vc.name, vsc.name, u.username, u.image, orig.id, orig_u.id
 ORDER BY comment_count DESC
 LIMIT 1;
     `;
@@ -362,10 +420,26 @@ LIMIT 1;
         .json({ statusCode: 404, message: "No  videos found" });
     }
 
+    const videoData = result.rows[0];
+    if (videoData.shared_post_id) {
+      videoData.original_post = {
+        id: videoData.shared_post_id,
+        name: videoData.original_name,
+        description: videoData.original_description,
+        video: videoData.original_video,
+        thumbnail: videoData.original_thumbnail,
+        username: videoData.original_username,
+        user_image: videoData.original_user_image,
+        created_at: videoData.original_created_at,
+      };
+    } else {
+      videoData.original_post = null;
+    }
+
     return res.status(200).json({
       statusCode: 200,
       message: "Top  video with the most comments retrieved successfully",
-      data: result.rows[0],
+      data: videoData,
     });
   } catch (error) {
     console.error(error);
@@ -492,6 +566,7 @@ ORDER BY v.created_at DESC
         videos: videosResult.rows.map(row => ({
           ...row,
           original_post: row.shared_post_id ? {
+            id: row.shared_post_id,
             name: row.original_name,
             description: row.original_description,
             video: row.original_video,
@@ -547,9 +622,17 @@ SELECT
   v.sub_category_id,
   vsc.name AS sub_category_name,
   v.user_id,
+  v.shared_post_id,
   u.username,
   u.image AS user_image,
   v.created_at,
+  orig.name AS original_name,
+  orig.description AS original_description,
+  orig.video AS original_video,
+  orig.thumbnail AS original_thumbnail,
+  orig_u.username AS original_username,
+  orig_u.image AS original_user_image,
+  orig.created_at AS original_created_at,
   COUNT(DISTINCT c.id) AS comment_count,
   COUNT(DISTINCT l.id) AS total_likes
 FROM learning_hobbies_videos v
@@ -558,8 +641,10 @@ LEFT JOIN learning_hobbies_category vc ON v.category_id = vc.id
 LEFT JOIN learning_hobbies_sub_category vsc ON v.sub_category_id = vsc.id
 LEFT JOIN learning_hobbies_video_comment c ON v.id = c.video_id
 LEFT JOIN learning_hobbies_video_like l ON v.id = l.video_id
+LEFT JOIN learning_hobbies_videos orig ON v.shared_post_id = orig.id
+LEFT JOIN users orig_u ON orig.user_id = orig_u.id
 WHERE v.user_id = $1
-GROUP BY v.id, vc.name, vsc.name, u.username, u.image
+GROUP BY v.id, vc.name, vsc.name, u.username, u.image, orig.id, orig_u.id
 ORDER BY v.created_at DESC
 LIMIT $2 OFFSET $3;
     `;
@@ -581,7 +666,24 @@ LIMIT $2 OFFSET $3;
       totalVideos,
       totalPages,
       currentPage: page,
-      videos: videosResult.rows,
+      currentPage: page,
+      videos: videosResult.rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            video: row.original_video,
+            thumbnail: row.original_thumbnail,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);
@@ -723,20 +825,31 @@ export const searchVideosByTitle = async (req, res) => {
         v.sub_category_id,
         vsc.name AS sub_category_name,
         v.user_id,
+        v.shared_post_id,
         u.username,
         u.image AS user_image,
         v.created_at,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.video AS original_video,
+        orig.thumbnail AS original_thumbnail,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at,
         COALESCE(likes.total_likes, 0) AS total_likes
       FROM learning_hobbies_videos v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN learning_hobbies_category vc ON v.category_id = vc.id
       LEFT JOIN learning_hobbies_sub_category vsc ON v.sub_category_id = vsc.id
+      LEFT JOIN learning_hobbies_videos orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       LEFT JOIN (
         SELECT video_id, COUNT(*) AS total_likes
         FROM learning_hobbies_video_like
         GROUP BY video_id
       ) likes ON v.id = likes.video_id
       WHERE v.name ILIKE $1
+      GROUP BY v.id, vc.name, vsc.name, u.username, u.image, orig.id, orig_u.id, likes.total_likes
       ORDER BY v.created_at DESC
       LIMIT $2 OFFSET $3
     `;
@@ -758,7 +871,24 @@ export const searchVideosByTitle = async (req, res) => {
       totalVideos,
       totalPages,
       currentPage: page,
-      videos: searchResult.rows,
+      currentPage: page,
+      videos: searchResult.rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            video: row.original_video,
+            thumbnail: row.original_thumbnail,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);

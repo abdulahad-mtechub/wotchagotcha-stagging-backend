@@ -33,25 +33,45 @@ export const createGEBC = async (req, res) => {
 
     if (result.rowCount === 1) {
       const query = `SELECT
-        v.id AS GEBC_id,
+        v.id AS gebc_id,
         v.description,
         v.category,
         v.sub_category,
         v.image,
         v.created_at AS tour_created_at,
         v.user_id,
+        v.shared_post_id,
         u.username AS username,
-        u.image AS userImage
+        u.image AS userImage,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
       FROM GEBC v
       JOIN users u ON v.user_id = u.id
+      LEFT JOIN GEBC orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.id = $1
-      GROUP BY v.id, u.username, u.image;
-     `;
+      GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;`;
       const data = await pool.query(query, [result.rows[0].id]);
+      const gebcData = data.rows[0];
+      if (gebcData.shared_post_id) {
+        gebcData.original_post = {
+          id: gebcData.shared_post_id,
+          description: gebcData.original_description,
+          image: gebcData.original_image,
+          username: gebcData.original_username,
+          user_image: gebcData.original_user_image,
+          created_at: gebcData.original_created_at,
+        };
+      } else {
+        gebcData.original_post = null;
+      }
       return res.status(201).json({
         statusCode: 201,
         message: "GEBC posted successfully",
-        data: data.rows[0],
+        data: gebcData,
       });
     }
 
@@ -167,25 +187,45 @@ export const updateGEBC = async (req, res) => {
     ]);
     if (result.rowCount === 1) {
       const query = `SELECT
-      v.id AS GEBC_id,
-      v.description,
-      v.category,
-      v.sub_category,
-      v.image,
-      v.created_at AS tour_created_at,
-      v.user_id,
-      u.username AS username,
-      u.image AS userImage
-    FROM GEBC v
-    JOIN users u ON v.user_id = u.id
-    WHERE v.id = $1
-    GROUP BY v.id, u.username, u.image;
-   `;
+        v.id AS gebc_id,
+        v.description,
+        v.category,
+        v.sub_category,
+        v.image,
+        v.created_at AS tour_created_at,
+        v.user_id,
+        v.shared_post_id,
+        u.username AS username,
+        u.image AS userImage,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
+      FROM GEBC v
+      JOIN users u ON v.user_id = u.id
+      LEFT JOIN GEBC orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+      WHERE v.id = $1
+      GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;`;
       const data = await pool.query(query, [id]);
+      const gebcData = data.rows[0];
+      if (gebcData.shared_post_id) {
+        gebcData.original_post = {
+          id: gebcData.shared_post_id,
+          description: gebcData.original_description,
+          image: gebcData.original_image,
+          username: gebcData.original_username,
+          user_image: gebcData.original_user_image,
+          created_at: gebcData.original_created_at,
+        };
+      } else {
+        gebcData.original_post = null;
+      }
       return res.status(200).json({
         statusCode: 200,
         message: "GEBC updated successfully",
-        updateGEBC: data.rows[0],
+        updateGEBC: gebcData,
       });
     } else {
       res
@@ -416,12 +456,13 @@ export const getSpecificGEBC = async (req, res) => {
   try {
     const { id } = req.params;
     const query = `SELECT
-    v.id AS GEBC_id,
+    v.id AS gebc_id,
     v.description,
     v.category,
     v.image,
     v.created_at AS tour_created_at,
     v.user_id,
+    v.shared_post_id,
     u.username AS username,
     u.image AS userImage,
     (
@@ -452,16 +493,36 @@ export const getSpecificGEBC = async (req, res) => {
         FROM like_GEBC lv
         JOIN users lu ON lv.user_id = lu.id
         WHERE lv.GEBC_id = v.id
-    ) AS likes
+    ) AS likes,
+    orig.description AS original_description,
+    orig.image AS original_image,
+    orig_u.username AS original_username,
+    orig_u.image AS original_user_image,
+    orig.created_at AS original_created_at
 FROM GEBC v
 JOIN users u ON v.user_id = u.id
+LEFT JOIN GEBC orig ON v.shared_post_id = orig.id
+LEFT JOIN users orig_u ON orig.user_id = orig_u.id
 WHERE v.id = $1 AND u.is_deleted=FALSE
-GROUP BY v.id, u.username, u.image;
+GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;
  `;
 
     const { rows } = await pool.query(query, [id]);
     if (rows.length > 0) {
-      return res.status(200).json({ statusCode: 200, GEBC: rows[0] });
+      const gebcData = rows[0];
+      if (gebcData.shared_post_id) {
+        gebcData.original_post = {
+          id: gebcData.shared_post_id,
+          description: gebcData.original_description,
+          image: gebcData.original_image,
+          username: gebcData.original_username,
+          user_image: gebcData.original_user_image,
+          created_at: gebcData.original_created_at,
+        };
+      } else {
+        gebcData.original_post = null;
+      }
+      return res.status(200).json({ statusCode: 200, GEBC: gebcData });
     } else {
       res.status(404).json({ statusCode: 404, message: "No GEBC found" });
     }
@@ -477,23 +538,31 @@ export const getAllGEBCs = async (req, res) => {
     const offset = (page - 1) * perPage;
 
     let getQuery = `SELECT
-      v.id AS GEBC_id,
+      v.id AS gebc_id,
       v.description,
       v.category AS category_id,
       v.sub_category AS sub_category_id,
       v.image,
       v.created_at AS tour_created_at,
       v.user_id,
+      v.shared_post_id,
       u.username AS username,
       u.image AS userImage,
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
-      sc.french_name AS sub_category_french_name
+      sc.french_name AS sub_category_french_name,
+      orig.description AS original_description,
+      orig.image AS original_image,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at
     FROM GEBC v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN GEBC_category c ON v.category = c.id
     LEFT JOIN GEBC_sub_category sc ON v.sub_category = sc.id
+    LEFT JOIN GEBC orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE u.is_deleted=FALSE
     ORDER BY v.created_at DESC`;
 
@@ -509,12 +578,28 @@ export const getAllGEBCs = async (req, res) => {
 
     const { rows } = await pool.query(getQuery, queryParameters);
 
+    const responseRows = rows.map((row) => {
+      if (row.shared_post_id) {
+        row.original_post = {
+          id: row.shared_post_id,
+          description: row.original_description,
+          image: row.original_image,
+          username: row.original_username,
+          user_image: row.original_user_image,
+          created_at: row.original_created_at,
+        };
+      } else {
+        row.original_post = null;
+      }
+      return row;
+    });
+
     if (req.query.page === undefined && req.query.limit === undefined) {
       // If no pagination is applied, don't calculate totalCategories and totalPages
       res.status(200).json({
         statusCode: 200,
-        totalGEBC: rows.length,
-        AllGEBCs: rows,
+        totalGEBC: responseRows.length,
+        AllGEBCs: responseRows,
       });
     } else {
       // Calculate the total number of GEBCs (without pagination)
@@ -524,11 +609,27 @@ export const getAllGEBCs = async (req, res) => {
       const totalGEBC = totalGEBCResult.rows[0].count;
       const totalPages = Math.ceil(totalGEBC / perPage);
 
+      const responseRows = rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            description: row.original_description,
+            image: row.original_image,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      });
+
       res.status(200).json({
         statusCode: 200,
         totalGEBC,
         totalPages,
-        AllGEBCs: rows,
+        AllGEBCs: responseRows,
       });
     }
   } catch (error) {
@@ -563,32 +664,54 @@ export const getAllGEBCByUser = async (req, res) => {
     const totalPages = Math.ceil(totalGEBCs / perPage);
 
     const query = `SELECT
-      v.id AS GEBC_id,
+      v.id AS gebc_id,
       v.description,
       v.category AS category_id,
       v.sub_category AS sub_category_id,
       v.image,
       v.created_at AS tour_created_at,
       v.user_id,
+      v.shared_post_id,
       u.username AS username,
       u.image AS userImage,
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
-      sc.french_name AS sub_category_french_name
+      sc.french_name AS sub_category_french_name,
+      orig.description AS original_description,
+      orig.image AS original_image,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at
     FROM GEBC v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN GEBC_category c ON v.category = c.id
     LEFT JOIN GEBC_sub_category sc ON v.sub_category = sc.id
+    LEFT JOIN GEBC orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.user_id = $1 AND u.is_deleted=FALSE
     ORDER BY v.created_at DESC
     LIMIT $2 OFFSET $3;`;
 
-    const { rows } = await pool.query(query, [id, perPage, offset]);
+    const responseRows = rows.map((row) => {
+      if (row.shared_post_id) {
+        row.original_post = {
+          id: row.shared_post_id,
+          description: row.original_description,
+          image: row.original_image,
+          username: row.original_username,
+          user_image: row.original_user_image,
+          created_at: row.original_created_at,
+        };
+      } else {
+        row.original_post = null;
+      }
+      return row;
+    });
 
     return res
       .status(200)
-      .json({ statusCode: 200, totalPages, totalGEBCs, GEBCs: rows });
+      .json({ statusCode: 200, totalPages, totalGEBCs, GEBCs: responseRows });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
@@ -683,6 +806,7 @@ export const getAllGEBCsByCategory = async (req, res) => {
         total_likes: gebc.total_likes,
         shared_post_id: gebc.shared_post_id,
         original_post: gebc.shared_post_id ? {
+          id: gebc.shared_post_id,
           description: gebc.original_description,
           image: gebc.original_image,
           username: gebc.original_username,
@@ -720,9 +844,15 @@ export const getTopGEBWithMostComments = async (req, res) => {
         gc.name AS category_name,
         gsc.name AS sub_category_name,
         g.user_id,
+        g.shared_post_id,
         u.username,
         u.image AS user_image,
         g.created_at,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at,
         COUNT(DISTINCT c.id) AS comment_count,
         COUNT(DISTINCT l.id) AS total_likes
       FROM GEBC g
@@ -731,7 +861,9 @@ export const getTopGEBWithMostComments = async (req, res) => {
       LEFT JOIN GEBC_sub_category gsc ON g.sub_category = gsc.id
       LEFT JOIN GEBC_comment c ON g.id = c.GEBC_id
       LEFT JOIN like_GEBC l ON g.id = l.GEBC_id
-      GROUP BY g.id, gc.name, gsc.name, u.username, u.image
+      LEFT JOIN GEBC orig ON g.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+      GROUP BY g.id, gc.name, gsc.name, u.username, u.image, orig.id, orig_u.id
       ORDER BY comment_count DESC
       LIMIT 1;
     `;
@@ -744,10 +876,24 @@ export const getTopGEBWithMostComments = async (req, res) => {
         .json({ statusCode: 404, message: "No GEBC found" });
     }
 
+    const videoData = result.rows[0];
+    if (videoData.shared_post_id) {
+      videoData.original_post = {
+        id: videoData.shared_post_id,
+        description: videoData.original_description,
+        image: videoData.original_image,
+        username: videoData.original_username,
+        user_image: videoData.original_user_image,
+        created_at: videoData.original_created_at,
+      };
+    } else {
+      videoData.original_post = null;
+    }
+
     return res.status(200).json({
       statusCode: 200,
       message: "Top GEBC with the most comments retrieved successfully",
-      data: result.rows[0],
+      data: videoData,
     });
   } catch (error) {
     console.error(error);
@@ -772,29 +918,53 @@ export const searchGEBCs = async (req, res) => {
     });
 
     const query = `SELECT
-      v.id AS GEBC_id,
+      v.id AS gebc_id,
       v.description,
       v.category AS category_id,
       v.sub_category AS sub_category_id,
       v.image,
       v.created_at AS tour_created_at,
       v.user_id,
+      v.shared_post_id,
       u.username AS username,
       u.image AS userImage,
       c.name AS category_name,
-      sc.name AS sub_category_name
+      sc.name AS sub_category_name,
+      orig.description AS original_description,
+      orig.image AS original_image,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at
     FROM GEBC v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN GEBC_category c ON v.category = c.id
     LEFT JOIN GEBC_sub_category sc ON v.sub_category = sc.id
+    LEFT JOIN GEBC orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE (${conditions.join(" OR ")}) AND u.is_deleted=FALSE
     ORDER BY v.created_at DESC`;
 
     const { rows } = await pool.query(query);
 
+    const responseRows = rows.map((row) => {
+      if (row.shared_post_id) {
+        row.original_post = {
+          id: row.shared_post_id,
+          description: row.original_description,
+          image: row.original_image,
+          username: row.original_username,
+          user_image: row.original_user_image,
+          created_at: row.original_created_at,
+        };
+      } else {
+        row.original_post = null;
+      }
+      return row;
+    });
+
     return res
       .status(200)
-      .json({ statusCode: 200, totalGEBCs: rows.length, GEBCs: rows });
+      .json({ statusCode: 200, totalGEBCs: responseRows.length, GEBCs: responseRows });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });

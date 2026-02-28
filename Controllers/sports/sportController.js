@@ -43,21 +43,44 @@ export const create = async (req, res) => {
                     vc.name AS category_name,
                     vsc.name AS sub_category_name,
                     v.user_id AS user_id,
+                    v.shared_post_id,
                     u.username AS username,
                     u.image AS userImage,
-                    v.created_at AS created_at
+                    v.created_at AS created_at,
+                    orig.name AS original_name,
+                    orig.description AS original_description,
+                    orig.image AS original_image,
+                    orig_u.username AS original_username,
+                    orig_u.image AS original_user_image,
+                    orig.created_at AS original_created_at
                 FROM sports v
                 JOIN users u ON v.user_id = u.id
                 LEFT JOIN sports_category vc ON v.category_id = vc.id
                 LEFT JOIN sport_sub_category vsc ON v.sub_category_id = vsc.id
+                LEFT JOIN sports orig ON v.shared_post_id = orig.id
+                LEFT JOIN users orig_u ON orig.user_id = orig_u.id
                 WHERE v.id = $1
-                GROUP BY v.id, u.username, u.image, vc.name, vsc.name
+                GROUP BY v.id, u.username, u.image, vc.name, vsc.name, orig.id, orig_u.id
             `;
       const data = await pool.query(query, [result.rows[0].id]);
+      const sportData = data.rows[0];
+      if (sportData.shared_post_id) {
+        sportData.original_post = {
+          id: sportData.shared_post_id,
+          name: sportData.original_name,
+          description: sportData.original_description,
+          image: sportData.original_image,
+          username: sportData.original_username,
+          user_image: sportData.original_user_image,
+          created_at: sportData.original_created_at,
+        };
+      } else {
+        sportData.original_post = null;
+      }
       return res.status(201).json({
         statusCode: 201,
         message: "Sport created successfully",
-        data: data.rows[0],
+        data: sportData,
       });
     }
   } catch (error) {
@@ -118,23 +141,45 @@ export const update = async (req, res) => {
         vc.name AS category_name,
         vsc.name AS sub_category_name,
         v.user_id AS user_id,
+        v.shared_post_id,
         u.username AS username,
         u.image AS userImage,
-        v.created_at AS created_at
-        
+        v.created_at AS created_at,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
     FROM sports v
     JOIN users u ON v.user_id = u.id
     LEFT JOIN sports_category vc ON v.category_id = vc.id
     LEFT JOIN sport_sub_category vsc ON v.sub_category_id = vsc.id
+    LEFT JOIN sports orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.id = $1
-    GROUP BY v.id, u.username, u.image,vc.name, vsc.name;
+    GROUP BY v.id, u.username, u.image,vc.name, vsc.name, orig.id, orig_u.id;
     
      `;
       const data = await pool.query(query, [result.rows[0].id]);
+      const sportData = data.rows[0];
+      if (sportData.shared_post_id) {
+        sportData.original_post = {
+          id: sportData.shared_post_id,
+          name: sportData.original_name,
+          description: sportData.original_description,
+          image: sportData.original_image,
+          username: sportData.original_username,
+          user_image: sportData.original_user_image,
+          created_at: sportData.original_created_at,
+        };
+      } else {
+        sportData.original_post = null;
+      }
       return res.status(200).json({
         statusCode: 200,
         message: "Sport updated successfully",
-        data: data.rows[0],
+        data: sportData,
       });
     }
   } catch (error) {
@@ -312,6 +357,13 @@ export const getTopSportWithMostComments = async (req, res) => {
       u.username,
       u.image AS user_image,
       v.created_at,
+      v.shared_post_id,
+      orig.name AS original_name,
+      orig.description AS original_description,
+      orig.image AS original_image,
+      orig_u.username AS original_username,
+      orig_u.image AS original_user_image,
+      orig.created_at AS original_created_at,
       COUNT(DISTINCT c.id) AS comment_count,
       COUNT(DISTINCT l.id) AS total_likes
     FROM sports v
@@ -320,7 +372,9 @@ export const getTopSportWithMostComments = async (req, res) => {
     LEFT JOIN sport_sub_category vsc ON v.sub_category_id = vsc.id
     LEFT JOIN sport_comment c ON v.id = c.sport_id
     LEFT JOIN sport_like l ON v.id = l.sport_id
-    GROUP BY v.id, vc.name, vsc.name, u.username, u.image
+    LEFT JOIN sports orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+    GROUP BY v.id, vc.name, vsc.name, u.username, u.image, orig.id, orig_u.id
     ORDER BY comment_count DESC
     LIMIT 1;
         `;
@@ -333,10 +387,25 @@ export const getTopSportWithMostComments = async (req, res) => {
         .json({ statusCode: 404, message: "No sport found" });
     }
 
+    const sportData = result.rows[0];
+    if (sportData.shared_post_id) {
+      sportData.original_post = {
+        id: sportData.shared_post_id,
+        name: sportData.original_name,
+        description: sportData.original_description,
+        image: sportData.original_image,
+        username: sportData.original_username,
+        user_image: sportData.original_user_image,
+        created_at: sportData.original_created_at,
+      };
+    } else {
+      sportData.original_post = null;
+    }
+
     return res.status(200).json({
       statusCode: 200,
       message: "Top sport with the most comments retrieved successfully",
-      data: result.rows[0],
+      data: sportData,
     });
   } catch (error) {
     console.error(error);
@@ -450,6 +519,7 @@ ORDER BY v.created_at DESC
         Sports: sportsResult.rows.map(row => ({
           ...row,
           original_post: row.shared_post_id ? {
+            id: row.shared_post_id,
             name: row.original_name,
             description: row.original_description,
             image: row.original_image,
@@ -507,9 +577,16 @@ export const getSportByUserId = async (req, res) => {
               vsc.name AS sub_category_name,
               vsc.french_name AS sub_category_french_name,
               v.user_id,
+              v.shared_post_id,
               u.username,
               u.image AS user_image,
               v.created_at,
+              orig.name AS original_name,
+              orig.description AS original_description,
+              orig.image AS original_image,
+              orig_u.username AS original_username,
+              orig_u.image AS original_user_image,
+              orig.created_at AS original_created_at,
               COUNT(DISTINCT c.id) AS comment_count,
               COUNT(DISTINCT l.id) AS total_likes
             FROM sports v
@@ -518,8 +595,10 @@ export const getSportByUserId = async (req, res) => {
             LEFT JOIN sport_sub_category vsc ON v.sub_category_id = vsc.id
             LEFT JOIN sport_comment c ON v.id = c.sport_id
             LEFT JOIN sport_like l ON v.id = l.sport_id
+            LEFT JOIN sports orig ON v.shared_post_id = orig.id
+            LEFT JOIN users orig_u ON orig.user_id = orig_u.id
             WHERE v.user_id = $1
-            GROUP BY v.id, vc.name, vsc.name, u.username, u.image, vc.french_name, vsc.french_name
+            GROUP BY v.id, vc.name, vsc.name, u.username, u.image, vc.french_name, vsc.french_name, orig.id, orig_u.id
             ORDER BY v.created_at DESC
             LIMIT $2 OFFSET $3;
         `;
@@ -543,7 +622,23 @@ export const getSportByUserId = async (req, res) => {
       totalPages,
       // count: sportsResult.rows.length,
       currentPage: page,
-      sports: sportsResult.rows,
+      currentPage: page,
+      sports: sportsResult.rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            image: row.original_image,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);
@@ -683,20 +778,30 @@ export const searchSportsByTitle = async (req, res) => {
         v.sub_category_id,
         vsc.name AS sub_category_name,
         v.user_id,
+        v.shared_post_id,
         u.username,
         u.image AS user_image,
         v.created_at,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at,
         COALESCE(likes.total_likes, 0) AS total_likes
       FROM sports v
       JOIN users u ON v.user_id = u.id
       LEFT JOIN sports_category vc ON v.category_id = vc.id
       LEFT JOIN sport_sub_category vsc ON v.sub_category_id = vsc.id
+      LEFT JOIN sports orig ON v.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       LEFT JOIN (
         SELECT sport_id, COUNT(*) AS total_likes
         FROM sport_like
         GROUP BY sport_id
       ) likes ON v.id = likes.sport_id
       WHERE v.name ILIKE $1
+      GROUP BY v.id, vc.name, vsc.name, u.username, u.image, orig.id, orig_u.id, likes.total_likes
       ORDER BY v.created_at DESC
       LIMIT $2 OFFSET $3
     `;
@@ -718,7 +823,23 @@ export const searchSportsByTitle = async (req, res) => {
       totalSports,
       totalPages,
       currentPage: page,
-      sports: searchResult.rows,
+      currentPage: page,
+      sports: searchResult.rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            description: row.original_description,
+            image: row.original_image,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      }),
     });
   } catch (error) {
     console.error(error);
