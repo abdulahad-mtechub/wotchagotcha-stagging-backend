@@ -37,7 +37,7 @@ export const createBanner = async (req, res) => {
     // If client provided a transaction_id (from stripe_payments.provider_transaction_id),
     // try to fetch the raw_response and mark the banner paid.
     let transactionData = null;
-    let finalPaidStatus = paid_status;
+    let finalPaidStatus = (paid_status === 'paid' || paid_status === true);
     if (transaction_id) {
       try {
         const txRes = await pool.query(`SELECT raw_response FROM stripe_payments WHERE provider_transaction_id = $1 LIMIT 1`, [transaction_id]);
@@ -377,6 +377,7 @@ export const updateBanner = async (req, res) => {
       ? existingBanner.rows[0].banner_link
       : (String(banner_link).trim() === '' ? null : String(banner_link).trim());
 
+    const isPaid = (paid_status === 'paid' || paid_status === true);
     const updateQuery = `
         UPDATE banner
         SET banner_link = $2, price = $3, startDate = $4, endDate = $5, status = $6,image=$7,paid_status=$8, top_banner = $9, category_table = $10, category_id = $11
@@ -391,7 +392,7 @@ export const updateBanner = async (req, res) => {
       endDate,
       updatedStatus,
       updateData.image,
-      paid_status,
+      isPaid,
       top_banner,
       category_table,
       category_id,

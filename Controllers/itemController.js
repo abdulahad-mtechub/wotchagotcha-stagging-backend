@@ -36,19 +36,25 @@ export const createItem = async (req, res) => {
     //   return res.status(400).json({ error: req.fileValidationError });
     // }
     // const images = req.files.map((file) => `/itemImages/${file.filename}`);
+    const effectiveCategory = item_category || category_id;
+    const effectiveSubCategory = sub_category || sub_category_id || null;
+    const effectiveRegion = region ? region.toLowerCase() : "us"; // Default to 'us' as it is NOT NULL
+    const effectiveCondition = condition || "new";
+
+    const isPaid = paid_status === "paid" || paid_status === true;
     const createQuery = `INSERT INTO item (user_id,item_category, sub_category, title, description, price,condition,location,paid_status,region, shared_post_id) 
         VALUES ($1, $2, $3, $4, $5,$6,$7,$8,$9,$10, $11) RETURNING *`;
     const result = await pool.query(createQuery, [
       user_id,
-      item_category,
-      sub_category || null,
+      effectiveCategory,
+      effectiveSubCategory,
       title || "",
       description || "",
       price || 0,
-      condition || "",
+      effectiveCondition,
       location || "",
-      paid_status || "unpaid",
-      region ? region.toLowerCase() : null,
+      isPaid,
+      effectiveRegion,
       shared_post_id || null,
     ]);
 
@@ -83,12 +89,27 @@ export const createItem = async (req, res) => {
           item.location,
           item.top_post,
           item.paid_status,
+          item.shared_post_id,
           COALESCE(ARRAY_AGG(
             JSONB_BUILD_OBJECT(
               'id', ii.id,
               'image', ii.image
             )
-          ), ARRAY[]::JSONB[]) AS images
+          ) FILTER (WHERE ii.id IS NOT NULL), ARRAY[]::JSONB[]) AS images,
+          CASE WHEN item.shared_post_id IS NOT NULL THEN
+            JSONB_BUILD_OBJECT(
+              'id', orig.id,
+              'title', orig.title,
+              'description', orig.description,
+              'price', orig.price,
+              'condition', orig.condition,
+              'location', orig.location,
+              'username', orig_u.username,
+              'user_image', orig_u.image,
+              'created_at', orig.created_at,
+              'images', COALESCE(orig_images.images, ARRAY[]::JSONB[])
+            )
+          ELSE NULL END AS original_post
         FROM item
         LEFT JOIN item_images ii ON item.id = ii.item_id
         LEFT JOIN users u ON item.user_id = u.id
@@ -96,6 +117,11 @@ export const createItem = async (req, res) => {
         LEFT JOIN item_sub_category isc ON item.sub_category = isc.id
         LEFT JOIN item orig ON item.shared_post_id = orig.id
         LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+        LEFT JOIN LATERAL (
+          SELECT ARRAY_AGG(JSONB_BUILD_OBJECT('id', img.id, 'image', img.image) ORDER BY img.id) AS images
+          FROM item_images img
+          WHERE img.item_id = orig.id
+        ) orig_images ON TRUE
         WHERE item.id = $1
         GROUP BY
           item.id,
@@ -114,26 +140,12 @@ export const createItem = async (req, res) => {
           u.image,
           ic.name,
           orig.id,
-          orig_u.id;
+          orig_u.id,
+          orig_images.images;
       `;
 
       const getResult = await pool.query(getQuery, [result.rows[0].id]);
       const itemData = getResult.rows[0];
-      if (itemData.shared_post_id) {
-        itemData.original_post = {
-          id: itemData.shared_post_id,
-          title: itemData.original_title,
-          description: itemData.original_description,
-          price: itemData.original_price,
-          condition: itemData.original_condition,
-          location: itemData.original_location,
-          username: itemData.original_username,
-          user_image: itemData.original_user_image,
-          created_at: itemData.original_created_at,
-        };
-      } else {
-        itemData.original_post = null;
-      }
       return res.status(201).json({
         statusCode: 201,
         message: "Created successfully",
@@ -225,6 +237,7 @@ export const updateItem = async (req, res) => {
       }
     }
 
+    const isPaid = paid_status === "paid" || paid_status === true;
     const updateProduct = `UPDATE item SET item_category=$1, sub_category=$2, title=$3,description=$4,price=$5,condition=$6,location=$7,region=$8,paid_status=$9, "updated_at"=NOW() WHERE id=$10 RETURNING *`;
     const result = await pool.query(updateProduct, [
       item_category,
@@ -235,7 +248,7 @@ export const updateItem = async (req, res) => {
       condition,
       location,
       region,
-      paid_status,
+      isPaid,
       item_id,
     ]);
     if (result.rowCount === 1) {
@@ -258,20 +271,26 @@ export const updateItem = async (req, res) => {
               item.top_post,
               item.paid_status,
               item.shared_post_id,
-              orig.title AS original_title,
-              orig.description AS original_description,
-              orig.price AS original_price,
-              orig.condition AS original_condition,
-              orig.location AS original_location,
-              orig_u.username AS original_username,
-              orig_u.image AS original_user_image,
-              orig.created_at AS original_created_at,
               COALESCE(ARRAY_AGG(
                 JSONB_BUILD_OBJECT(
                   'id', ii.id,
                   'image', ii.image
                 )
-              ), ARRAY[]::JSONB[]) AS images
+              ) FILTER (WHERE ii.id IS NOT NULL), ARRAY[]::JSONB[]) AS images,
+              CASE WHEN item.shared_post_id IS NOT NULL THEN
+                JSONB_BUILD_OBJECT(
+                  'id', orig.id,
+                  'title', orig.title,
+                  'description', orig.description,
+                  'price', orig.price,
+                  'condition', orig.condition,
+                  'location', orig.location,
+                  'username', orig_u.username,
+                  'user_image', orig_u.image,
+                  'created_at', orig.created_at,
+                  'images', COALESCE(orig_images.images, ARRAY[]::jsonb[])
+                )
+              ELSE NULL END AS original_post
             FROM item
             LEFT JOIN item_images ii ON item.id = ii.item_id
             LEFT JOIN users u ON item.user_id = u.id
@@ -279,6 +298,11 @@ export const updateItem = async (req, res) => {
             LEFT JOIN item_sub_category isc ON item.sub_category = isc.id
             LEFT JOIN item orig ON item.shared_post_id = orig.id
             LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+            LEFT JOIN LATERAL (
+              SELECT ARRAY_AGG(JSONB_BUILD_OBJECT('id', img.id, 'image', img.image) ORDER BY img.id) AS images
+              FROM item_images img
+              WHERE img.item_id = orig.id
+            ) orig_images ON TRUE
             WHERE item.id = $1
             GROUP BY
               item.id,
@@ -298,26 +322,12 @@ export const updateItem = async (req, res) => {
               ic.name,
               isc.name,
               orig.id,
-              orig_u.id;
-      `;
+              orig_u.id,
+              orig_images.images;
+          `;
 
       const getResult = await pool.query(getQuery, [item_id]);
       const itemData = getResult.rows[0];
-      if (itemData.shared_post_id) {
-        itemData.original_post = {
-          id: itemData.shared_post_id,
-          title: itemData.original_title,
-          description: itemData.original_description,
-          price: itemData.original_price,
-          condition: itemData.original_condition,
-          location: itemData.original_location,
-          username: itemData.original_username,
-          user_image: itemData.original_user_image,
-          created_at: itemData.original_created_at,
-        };
-      } else {
-        itemData.original_post = null;
-      }
 
       return res.status(200).json({ statusCode: 200, Item: itemData });
     } else {
@@ -552,8 +562,9 @@ export const changePaidStatus = async (req, res) => {
         .json({ statusCode: 404, message: "Item not found " });
     }
 
+    const isPaid = status === "paid" || status === true;
     const delQuery = "UPDATE item SET paid_status=$1 WHERE id=$2 RETURNING *";
-    await pool.query(delQuery, [status, id]);
+    await pool.query(delQuery, [isPaid, id]);
 
     const getQuery = `
      SELECT
@@ -660,22 +671,27 @@ export const getSpecificItem = async (req, res) => {
         item.location,
         item.top_post,
         item.paid_status,
+        item.shared_post_id,
         COALESCE(ARRAY_AGG(DISTINCT
           JSONB_BUILD_OBJECT(
             'id', ii.id,
             'image', ii.image
           )
-        ), ARRAY[]::JSONB[]) AS images,
-        item.shared_post_id,
-        -- Original post details
-        orig.title AS original_title,
-        orig.description AS original_description,
-        orig.price AS original_price,
-        orig.condition AS original_condition,
-        orig.location AS original_location,
-        orig_u.username AS original_username,
-        orig_u.image AS original_user_image,
-        orig.created_at AS original_created_at`;
+        ) FILTER (WHERE ii.id IS NOT NULL), ARRAY[]::JSONB[]) AS images,
+        CASE WHEN item.shared_post_id IS NOT NULL THEN
+          JSONB_BUILD_OBJECT(
+            'id', orig.id,
+            'title', orig.title,
+            'description', orig.description,
+            'price', orig.price,
+            'condition', orig.condition,
+            'location', orig.location,
+            'username', orig_u.username,
+            'user_image', orig_u.image,
+            'created_at', orig.created_at,
+            'images', COALESCE(orig_images.images, ARRAY[]::jsonb[])
+          )
+        ELSE NULL END AS original_post`;
 
     if (user_id) {
       sqlQuery += `,
@@ -686,7 +702,14 @@ export const getSpecificItem = async (req, res) => {
       FROM item
       LEFT JOIN item_images ii ON item.id = ii.item_id
       LEFT JOIN users u ON item.user_id = u.id
-      LEFT JOIN item_category ic ON item.item_category = ic.id`;
+      LEFT JOIN item_category ic ON item.item_category = ic.id
+      LEFT JOIN item orig ON item.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+      LEFT JOIN LATERAL (
+          SELECT ARRAY_AGG(JSONB_BUILD_OBJECT('id', img.id, 'image', img.image) ORDER BY img.id) AS images
+          FROM item_images img
+          WHERE img.item_id = orig.id
+      ) orig_images ON TRUE`;
 
     if (user_id) {
       sqlQuery += `
@@ -696,55 +719,28 @@ export const getSpecificItem = async (req, res) => {
     sqlQuery += `
       WHERE item.id = $1 AND u.is_deleted=FALSE`;
 
+    sqlQuery += `
+      GROUP BY
+        item.id,
+        item.user_id,
+        item.item_category,
+        item.title,
+        item.description,
+        item.price,
+        item.condition,
+        item.location,
+        item.top_post,
+        item.paid_status,
+        item.shared_post_id,
+        u.username,
+        u.image,
+        ic.name,
+        orig.id,
+        orig_u.id,
+        orig_images.images`;
+
     if (user_id) {
-      sqlQuery += `
-        GROUP BY
-          item.id,
-          item.user_id,
-          item.item_category,
-          item.title,
-          item.description,
-          item.price,
-          item.condition,
-          item.location,
-          item.top_post,
-          item.paid_status,
-          u.username,
-          u.image,
-          ic.name,
-          si.id,
-          orig.title,
-          orig.description,
-          orig.price,
-          orig.condition,
-          orig.location,
-          orig_u.username,
-          orig_u.image,
-          orig.created_at`;
-    } else {
-      sqlQuery += `
-        GROUP BY
-          item.id,
-          item.user_id,
-          item.item_category,
-          item.title,
-          item.description,
-          item.price,
-          item.condition,
-          item.location,
-          item.top_post,
-          item.paid_status,
-          u.username,
-          u.image,
-          ic.name,
-          orig.title,
-          orig.description,
-          orig.price,
-          orig.condition,
-          orig.location,
-          orig_u.username,
-          orig_u.image,
-          orig.created_at`;
+      sqlQuery += `, si.id`;
     }
 
     const queryParams = [id];
@@ -755,19 +751,7 @@ export const getSpecificItem = async (req, res) => {
 
     const data = await pool.query(sqlQuery, queryParams);
     const item = data.rows[0];
-    if (item) {
-      item.original_post = item.shared_post_id ? {
-        id: item.shared_post_id,
-        title: item.original_title,
-        description: item.original_description,
-        price: item.original_price,
-        condition: item.original_condition,
-        location: item.original_location,
-        username: item.original_username,
-        user_image: item.original_user_image,
-        created_at: item.original_created_at
-      } : null;
-    }
+
     return res.status(200).json({ statusCode: 200, item: item || [] });
   } catch (error) {
     console.error(error);
@@ -791,7 +775,7 @@ export const getAllItemByCatgory = async (req, res) => {
         "AND LOWER(item.region) ILIKE LOWER($" + queryParameters.length + ")";
     }
 
-    let query = `
+    query = `
         SELECT
           item.id,
           item.user_id,
@@ -813,22 +797,32 @@ export const getAllItemByCatgory = async (req, res) => {
               'id', ii.id,
               'image', ii.image
             )
-          ), ARRAY[]::JSONB[]) AS images,
-          -- Original post details
-          orig.title AS original_title,
-          orig.description AS original_description,
-          orig.price AS original_price,
-          orig.condition AS original_condition,
-          orig.location AS original_location,
-          orig_u.username AS original_username,
-          orig_u.image AS original_user_image,
-          orig.created_at AS original_created_at
+          ) FILTER (WHERE ii.id IS NOT NULL), ARRAY[]::JSONB[]) AS images,
+          CASE WHEN item.shared_post_id IS NOT NULL THEN
+            JSONB_BUILD_OBJECT(
+              'id', orig.id,
+              'title', orig.title,
+              'description', orig.description,
+              'price', orig.price,
+              'condition', orig.condition,
+              'location', orig.location,
+              'username', orig_u.username,
+              'user_image', orig_u.image,
+              'created_at', orig.created_at,
+              'images', COALESCE(orig_images.images, ARRAY[]::jsonb[])
+            )
+          ELSE NULL END AS original_post
         FROM item
         LEFT JOIN item_images ii ON item.id = ii.item_id
         LEFT JOIN users u ON item.user_id = u.id
         LEFT JOIN item_category ic ON item.item_category = ic.id
         LEFT JOIN item orig ON item.shared_post_id = orig.id
         LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+        LEFT JOIN LATERAL (
+          SELECT ARRAY_AGG(JSONB_BUILD_OBJECT('id', img.id, 'image', img.image) ORDER BY img.id) AS images
+          FROM item_images img
+          WHERE img.item_id = orig.id
+        ) orig_images ON TRUE
         WHERE item.item_category = $1 AND u.is_deleted=FALSE
         ${regionCondition}
         GROUP BY
@@ -847,7 +841,8 @@ export const getAllItemByCatgory = async (req, res) => {
           u.image,
           ic.name,
           orig.id,
-          orig_u.id
+          orig_u.id,
+          orig_images.images
           ORDER BY item.created_at DESC
       `;
 
@@ -863,28 +858,10 @@ export const getAllItemByCatgory = async (req, res) => {
     const data = await pool.query(query, queryParameters);
     if (req.query.page === undefined && req.query.limit === undefined) {
       // If no pagination is applied, don't calculate totalCategories and totalPages
-      const responseRows = data.rows.map((row) => {
-        if (row.shared_post_id) {
-          row.original_post = {
-            id: row.shared_post_id,
-            title: row.original_title,
-            description: row.original_description,
-            price: row.original_price,
-            condition: row.original_condition,
-            location: row.original_location,
-            username: row.original_username,
-            user_image: row.original_user_image,
-            created_at: row.original_created_at,
-          };
-        } else {
-          row.original_post = null;
-        }
-        return row;
-      });
       res.status(200).json({
         statusCode: 200,
-        totalItems: responseRows.length,
-        AllItems: responseRows,
+        totalItems: data.rows.length,
+        AllItems: data.rows,
       });
     } else {
       // Calculate the total number of categories (without pagination)
@@ -904,19 +881,7 @@ export const getAllItemByCatgory = async (req, res) => {
         statusCode: 200,
         totalItems,
         totalPages,
-        AllItems: data.rows.map(row => ({
-          ...row,
-          original_post: row.shared_post_id ? {
-            title: row.original_title,
-            description: row.original_description,
-            price: row.original_price,
-            condition: row.original_condition,
-            location: row.original_location,
-            username: row.original_username,
-            user_image: row.original_user_image,
-            created_at: row.original_created_at
-          } : null
-        })),
+        AllItems: data.rows,
       });
     }
     //   return res.status(200).json({ statusCode: 200, item: data.rows });
@@ -947,48 +912,59 @@ export const getAllItemsByUser = async (req, res) => {
         item.condition,
         item.location,
         item.top_post,
-          item.paid_status,
-          item.shared_post_id,
-          COALESCE(ARRAY_AGG(DISTINCT
-            JSONB_BUILD_OBJECT(
-              'id', ii.id,
-              'image', ii.image
-            )
-          ), ARRAY[]::JSONB[]) AS images,
-          -- Original post details
-          orig.title AS original_title,
-          orig.description AS original_description,
-          orig.price AS original_price,
-          orig.condition AS original_condition,
-          orig.location AS original_location,
-          orig_u.username AS original_username,
-          orig_u.image AS original_user_image,
-          orig.created_at AS original_created_at
-        FROM item
-        LEFT JOIN item_images ii ON item.id = ii.item_id
-        LEFT JOIN users u ON item.user_id = u.id
-        LEFT JOIN item_category ic ON item.item_category = ic.id
-        LEFT JOIN item orig ON item.shared_post_id = orig.id
-        LEFT JOIN users orig_u ON orig.user_id = orig_u.id
-        WHERE item.user_id = $1 AND u.is_deleted=FALSE
-        GROUP BY
-          item.id,
-          item.user_id,
-          item.item_category,
-          item.title,
-          item.region,
-          item.description,
-          item.price,
-          item.condition,
-          item.location,
-          item.top_post,
-          item.paid_status,
-          u.username,
-          u.image,
-          ic.name,
-          orig.id,
-          orig_u.id
-          ORDER BY item.created_at DESC
+        item.paid_status,
+        item.shared_post_id,
+        COALESCE(ARRAY_AGG(DISTINCT
+          JSONB_BUILD_OBJECT(
+            'id', ii.id,
+            'image', ii.image
+          )
+        ) FILTER (WHERE ii.id IS NOT NULL), ARRAY[]::JSONB[]) AS images,
+        CASE WHEN item.shared_post_id IS NOT NULL THEN
+          JSONB_BUILD_OBJECT(
+            'id', orig.id,
+            'title', orig.title,
+            'description', orig.description,
+            'price', orig.price,
+            'condition', orig.condition,
+            'location', orig.location,
+            'username', orig_u.username,
+            'user_image', orig_u.image,
+            'created_at', orig.created_at,
+            'images', COALESCE(orig_images.images, ARRAY[]::jsonb[])
+          )
+        ELSE NULL END AS original_post
+      FROM item
+      LEFT JOIN item_images ii ON item.id = ii.item_id
+      LEFT JOIN users u ON item.user_id = u.id
+      LEFT JOIN item_category ic ON item.item_category = ic.id
+      LEFT JOIN item orig ON item.shared_post_id = orig.id
+      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+      LEFT JOIN LATERAL (
+          SELECT ARRAY_AGG(JSONB_BUILD_OBJECT('id', img.id, 'image', img.image) ORDER BY img.id) AS images
+          FROM item_images img
+          WHERE img.item_id = orig.id
+      ) orig_images ON TRUE
+      WHERE item.user_id = $1 AND u.is_deleted=FALSE
+      GROUP BY
+        item.id,
+        item.user_id,
+        item.item_category,
+        item.title,
+        item.region,
+        item.description,
+        item.price,
+        item.condition,
+        item.location,
+        item.top_post,
+        item.paid_status,
+        u.username,
+        u.image,
+        ic.name,
+        orig.id,
+        orig_u.id,
+        orig_images.images
+        ORDER BY item.created_at DESC
     `;
 
     if (req.query.page === undefined && req.query.limit === undefined) {
@@ -1005,28 +981,10 @@ export const getAllItemsByUser = async (req, res) => {
 
     if (req.query.page === undefined && req.query.limit === undefined) {
       // If no pagination is applied, don't calculate totalCategories and totalPages
-      const responseRows = rows.map((row) => {
-        if (row.shared_post_id) {
-          row.original_post = {
-            id: row.shared_post_id,
-            title: row.original_title,
-            description: row.original_description,
-            price: row.original_price,
-            condition: row.original_condition,
-            location: row.original_location,
-            username: row.original_username,
-            user_image: row.original_user_image,
-            created_at: row.original_created_at,
-          };
-        } else {
-          row.original_post = null;
-        }
-        return row;
-      });
       res.status(200).json({
         statusCode: 200,
-        totalItems: responseRows.length,
-        AllItems: responseRows,
+        totalItems: rows.length,
+        AllItems: rows,
       });
     } else {
       // Calculate the total number of categories (without pagination)
@@ -1041,20 +999,7 @@ export const getAllItemsByUser = async (req, res) => {
         statusCode: 200,
         totalItems,
         totalPages,
-        AllItems: rows.map(row => ({
-          ...row,
-          original_post: row.shared_post_id ? {
-            id: row.shared_post_id,
-            title: row.original_title,
-            description: row.original_description,
-            price: row.original_price,
-            condition: row.original_condition,
-            location: row.original_location,
-            username: row.original_username,
-            user_image: row.original_user_image,
-            created_at: row.original_created_at
-          } : null
-        })),
+        AllItems: rows,
       });
     }
   } catch (error) {
@@ -1091,22 +1036,32 @@ export const getAllItems = async (req, res) => {
             'id', ii.id,
             'image', ii.image
           )
-        ), ARRAY[]::JSONB[]) AS images,
-        -- Original post details
-        orig.title AS original_title,
-        orig.description AS original_description,
-        orig.price AS original_price,
-        orig.condition AS original_condition,
-        orig.location AS original_location,
-        orig_u.username AS original_username,
-        orig_u.image AS original_user_image,
-        orig.created_at AS original_created_at
+        ) FILTER (WHERE ii.id IS NOT NULL), ARRAY[]::JSONB[]) AS images,
+        CASE WHEN item.shared_post_id IS NOT NULL THEN
+          JSONB_BUILD_OBJECT(
+            'id', orig.id,
+            'title', orig.title,
+            'description', orig.description,
+            'price', orig.price,
+            'condition', orig.condition,
+            'location', orig.location,
+            'username', orig_u.username,
+            'user_image', orig_u.image,
+            'created_at', orig.created_at,
+            'images', COALESCE(orig_images.images, ARRAY[]::jsonb[])
+          )
+        ELSE NULL END AS original_post
       FROM item
       LEFT JOIN item_images ii ON item.id = ii.item_id
       LEFT JOIN users u ON item.user_id = u.id
       LEFT JOIN item_category ic ON item.item_category = ic.id
       LEFT JOIN item orig ON item.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+      LEFT JOIN LATERAL (
+          SELECT ARRAY_AGG(JSONB_BUILD_OBJECT('id', img.id, 'image', img.image) ORDER BY img.id) AS images
+          FROM item_images img
+          WHERE img.item_id = orig.id
+      ) orig_images ON TRUE
       WHERE u.is_deleted=FALSE
       GROUP BY
         item.id,
@@ -1119,11 +1074,13 @@ export const getAllItems = async (req, res) => {
         item.location,
         item.top_post,
         item.paid_status,
+        item.shared_post_id,
         u.username,
         u.image,
         ic.name,
         orig.id,
-        orig_u.id
+        orig_u.id,
+        orig_images.images
         ORDER BY item.created_at DESC
     `;
 
@@ -1141,28 +1098,10 @@ export const getAllItems = async (req, res) => {
 
     if (req.query.page === undefined && req.query.limit === undefined) {
       // If no pagination is applied, don't calculate totalCategories and totalPages
-      const responseRows = rows.map((row) => {
-        if (row.shared_post_id) {
-          row.original_post = {
-            id: row.shared_post_id,
-            title: row.original_title,
-            description: row.original_description,
-            price: row.original_price,
-            condition: row.original_condition,
-            location: row.original_location,
-            username: row.original_username,
-            user_image: row.original_user_image,
-            created_at: row.original_created_at,
-          };
-        } else {
-          row.original_post = null;
-        }
-        return row;
-      });
       res.status(200).json({
         statusCode: 200,
-        totalItems: responseRows.length,
-        AllItems: responseRows,
+        totalItems: rows.length,
+        AllItems: rows,
       });
     } else {
       // Calculate the total number of categories (without pagination)
@@ -1178,20 +1117,7 @@ export const getAllItems = async (req, res) => {
         statusCode: 200,
         totalItems,
         totalPages,
-        AllItems: rows.map(row => ({
-          ...row,
-          original_post: row.shared_post_id ? {
-            id: row.shared_post_id,
-            title: row.original_title,
-            description: row.original_description,
-            price: row.original_price,
-            condition: row.original_condition,
-            location: row.original_location,
-            username: row.original_username,
-            user_image: row.original_user_image,
-            created_at: row.original_created_at
-          } : null
-        })),
+        AllItems: rows,
       });
     }
   } catch (error) {
@@ -1207,62 +1133,75 @@ export const getAllItemsByPaid = async (req, res) => {
     const perPage = parseInt(req.query.limit || 5);
     const offset = (page - 1) * perPage;
     let getQuery = `
-      SELECT
-        item.id,
-        item.user_id,
-        u.username AS username,
-        u.image AS userImage,
-        item.item_category,
-        ic.name AS item_category_name,
-        item.title,
-        item.region,
-        item.description,
-        item.price,
-        item.condition,
-        item.location,
-        item.top_post,
-        item.paid_status,
-        item.shared_post_id,
-        COALESCE(ARRAY_AGG(DISTINCT
-          JSONB_BUILD_OBJECT(
-            'id', ii.id,
-            'image', ii.image
-          )
-        ), ARRAY[]::JSONB[]) AS images,
-        -- Original post details
-        orig.title AS original_title,
-        orig.description AS original_description,
-        orig.price AS original_price,
-        orig.condition AS original_condition,
-        orig.location AS original_location,
-        orig_u.username AS original_username,
-        orig_u.image AS original_user_image,
-        orig.created_at AS original_created_at
-      FROM item
-      LEFT JOIN item_images ii ON item.id = ii.item_id
-      LEFT JOIN users u ON item.user_id = u.id
-      LEFT JOIN item_category ic ON item.item_category = ic.id
-      LEFT JOIN item orig ON item.shared_post_id = orig.id
-      LEFT JOIN users orig_u ON orig.user_id = orig_u.id
-      WHERE item.paid_status=$1 AND u.is_deleted=FALSE
-      GROUP BY
-        item.id,
-        item.user_id,
-        item.item_category,
-        item.title,
-        item.description,
-        item.price,
-        item.condition,
-        item.location,
-        item.top_post,
-        item.paid_status,
-        u.username,
-        u.image,
-        ic.name,
-        orig.id,
-        orig_u.id
-        ORDER BY item.created_at DESC
-    `;
+        SELECT
+          item.id,
+          item.user_id,
+          u.username AS username,
+          u.image AS userImage,
+          item.item_category,
+          ic.name AS item_category_name,
+          item.title,
+          item.region,
+          item.description,
+          item.price,
+          item.condition,
+          item.location,
+          item.top_post,
+          item.paid_status,
+          item.shared_post_id,
+          COALESCE(ARRAY_AGG(DISTINCT
+            JSONB_BUILD_OBJECT(
+              'id', ii.id,
+              'image', ii.image
+            )
+          ) FILTER (WHERE ii.id IS NOT NULL), ARRAY[]::JSONB[]) AS images,
+          CASE WHEN item.shared_post_id IS NOT NULL THEN
+            JSONB_BUILD_OBJECT(
+              'id', orig.id,
+              'title', orig.title,
+              'description', orig.description,
+              'price', orig.price,
+              'condition', orig.condition,
+              'location', orig.location,
+              'username', orig_u.username,
+              'user_image', orig_u.image,
+              'created_at', orig.created_at,
+              'images', COALESCE(orig_images.images, ARRAY[]::jsonb[])
+            )
+          ELSE NULL END AS original_post
+        FROM item
+        LEFT JOIN item_images ii ON item.id = ii.item_id
+        LEFT JOIN users u ON item.user_id = u.id
+        LEFT JOIN item_category ic ON item.item_category = ic.id
+        LEFT JOIN item orig ON item.shared_post_id = orig.id
+        LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+        LEFT JOIN LATERAL (
+          SELECT ARRAY_AGG(JSONB_BUILD_OBJECT('id', img.id, 'image', img.image) ORDER BY img.id) AS images
+          FROM item_images img
+          WHERE img.item_id = orig.id
+        ) orig_images ON TRUE
+        WHERE item.paid_status=$1 AND u.is_deleted=FALSE
+        GROUP BY
+          item.id,
+          item.user_id,
+          item.item_category,
+          item.title,
+          item.region,
+          item.description,
+          item.price,
+          item.condition,
+          item.location,
+          item.top_post,
+          item.paid_status,
+          item.shared_post_id,
+          u.username,
+          u.image,
+          ic.name,
+          orig.id,
+          orig_u.id,
+          orig_images.images
+          ORDER BY item.created_at DESC
+      `;
 
     if (req.query.page === undefined && req.query.limit === undefined) {
     } else {
@@ -1278,28 +1217,10 @@ export const getAllItemsByPaid = async (req, res) => {
 
     if (req.query.page === undefined && req.query.limit === undefined) {
       // If no pagination is applied, don't calculate totalCategories and totalPages
-      const responseRows = rows.map((row) => {
-        if (row.shared_post_id) {
-          row.original_post = {
-            id: row.shared_post_id,
-            title: row.original_title,
-            description: row.original_description,
-            price: row.original_price,
-            condition: row.original_condition,
-            location: row.original_location,
-            username: row.original_username,
-            user_image: row.original_user_image,
-            created_at: row.original_created_at,
-          };
-        } else {
-          row.original_post = null;
-        }
-        return row;
-      });
       res.status(200).json({
         statusCode: 200,
-        totalItems: responseRows.length,
-        AllItems: responseRows,
+        totalItems: rows.length,
+        AllItems: rows,
       });
     } else {
       // Calculate the total number of categories (without pagination)
@@ -1314,20 +1235,7 @@ export const getAllItemsByPaid = async (req, res) => {
         statusCode: 200,
         totalItems,
         totalPages,
-        AllItems: rows.map(row => ({
-          ...row,
-          original_post: row.shared_post_id ? {
-            id: row.shared_post_id,
-            title: row.original_title,
-            description: row.original_description,
-            price: row.original_price,
-            condition: row.original_condition,
-            location: row.original_location,
-            username: row.original_username,
-            user_image: row.original_user_image,
-            created_at: row.original_created_at
-          } : null
-        })),
+        AllItems: rows,
       });
     }
   } catch (error) {
@@ -1375,23 +1283,33 @@ export const searchitems = async (req, res) => {
               'id', ii.id,
               'image', ii.image
             )
-          ), ARRAY[]::JSONB[]) AS images,
-          -- Original post details
-          orig.title AS original_title,
-          orig.description AS original_description,
-          orig.price AS original_price,
-          orig.condition AS original_condition,
-          orig.location AS original_location,
-          orig_u.username AS original_username,
-          orig_u.image AS original_user_image,
-          orig.created_at AS original_created_at
+          ) FILTER (WHERE ii.id IS NOT NULL), ARRAY[]::JSONB[]) AS images,
+          CASE WHEN item.shared_post_id IS NOT NULL THEN
+            JSONB_BUILD_OBJECT(
+              'id', orig.id,
+              'title', orig.title,
+              'description', orig.description,
+              'price', orig.price,
+              'condition', orig.condition,
+              'location', orig.location,
+              'username', orig_u.username,
+              'user_image', orig_u.image,
+              'created_at', orig.created_at,
+              'images', COALESCE(orig_images.images, ARRAY[]::jsonb[])
+            )
+          ELSE NULL END AS original_post
         FROM item
         LEFT JOIN item_images ii ON item.id = ii.item_id
         LEFT JOIN users u ON item.user_id = u.id
         LEFT JOIN item_category ic ON item.item_category = ic.id
         LEFT JOIN item orig ON item.shared_post_id = orig.id
         LEFT JOIN users orig_u ON orig.user_id = orig_u.id
-        WHERE ${conditions.join(" OR ")} AND u.is_deleted=FALSE
+        LEFT JOIN LATERAL (
+          SELECT ARRAY_AGG(JSONB_BUILD_OBJECT('id', img.id, 'image', img.image) ORDER BY img.id) AS images
+          FROM item_images img
+          WHERE img.item_id = orig.id
+        ) orig_images ON TRUE
+        WHERE (${conditions.join(" OR ")}) AND u.is_deleted=FALSE
         GROUP BY
           item.id,
           item.user_id,
@@ -1403,30 +1321,21 @@ export const searchitems = async (req, res) => {
           item.location,
           item.top_post,
           item.paid_status,
+          item.shared_post_id,
           u.username,
           u.image,
           ic.name,
           orig.id,
-          orig_u.id;
+          orig_u.id,
+          orig_images.images;
       `;
     const { rows } = await pool.query(getQuery);
     return res
       .status(200)
       .json({
-        statusCode: 200, totalResults: rows.length, letters: rows.map(row => ({
-          ...row,
-          original_post: row.shared_post_id ? {
-            id: row.shared_post_id,
-            title: row.original_title,
-            description: row.original_description,
-            price: row.original_price,
-            condition: row.original_condition,
-            location: row.original_location,
-            username: row.original_username,
-            user_image: row.original_user_image,
-            created_at: row.original_created_at
-          } : null
-        }))
+        statusCode: 200,
+        totalResults: rows.length,
+        letters: rows
       });
   } catch (error) {
     console.error(error);
@@ -2019,28 +1928,10 @@ export const getAllSavedItemsByUser = async (req, res) => {
 
     if (req.query.page === undefined && req.query.limit === undefined) {
       // If no pagination is applied, don't calculate totalCategories and totalPages
-      const responseRows = rows.map((row) => {
-        if (row.shared_post_id) {
-          row.original_post = {
-            id: row.shared_post_id,
-            title: row.original_title,
-            description: row.original_description,
-            price: row.original_price,
-            condition: row.original_condition,
-            location: row.original_location,
-            username: row.original_username,
-            user_image: row.original_user_image,
-            created_at: row.original_created_at,
-          };
-        } else {
-          row.original_post = null;
-        }
-        return row;
-      });
       res.status(200).json({
         statusCode: 200,
-        totalItems: responseRows.length,
-        AllSavedItems: responseRows,
+        totalItems: rows.length,
+        AllSavedItems: rows,
       });
     } else {
       // Calculate the total number of categories (without pagination)
@@ -2053,20 +1944,7 @@ export const getAllSavedItemsByUser = async (req, res) => {
         statusCode: 200,
         totalItems,
         totalPages,
-        AllSavedItems: rows.map(row => ({
-          ...row,
-          original_post: row.shared_post_id ? {
-            id: row.shared_post_id,
-            title: row.original_title,
-            description: row.original_description,
-            price: row.original_price,
-            condition: row.original_condition,
-            location: row.original_location,
-            username: row.original_username,
-            user_image: row.original_user_image,
-            created_at: row.original_created_at
-          } : null
-        })),
+        AllSavedItems: rows,
       });
     }
   } catch (error) {
@@ -2115,17 +1993,22 @@ export const searchSaveItems = async (req, res) => {
             'id', ii.id,
             'image', ii.image
           )
-        ), ARRAY[]::JSONB[]) AS images,
+        ) FILTER (WHERE ii.id IS NOT NULL), ARRAY[]::JSONB[]) AS images,
         CASE WHEN si.id IS NOT NULL THEN true ELSE false END AS is_saved,
-        -- Original post details
-        orig.title AS original_title,
-        orig.description AS original_description,
-        orig.price AS original_price,
-        orig.condition AS original_condition,
-        orig.location AS original_location,
-        orig_u.username AS original_username,
-        orig_u.image AS original_user_image,
-        orig.created_at AS original_created_at
+        CASE WHEN item.shared_post_id IS NOT NULL THEN
+          JSONB_BUILD_OBJECT(
+            'id', orig.id,
+            'title', orig.title,
+            'description', orig.description,
+            'price', orig.price,
+            'condition', orig.condition,
+            'location', orig.location,
+            'username', orig_u.username,
+            'user_image', orig_u.image,
+            'created_at', orig.created_at,
+            'images', COALESCE(orig_images.images, ARRAY[]::jsonb[])
+          )
+        ELSE NULL END AS original_post
       FROM save_item
       LEFT JOIN item  ON save_item.item_id = item.id
       LEFT JOIN item_images ii ON item.id = ii.item_id
@@ -2134,9 +2017,14 @@ export const searchSaveItems = async (req, res) => {
       LEFT JOIN save_item si ON item.id = si.item_id AND si.user_id = $1
       LEFT JOIN item orig ON item.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
-      WHERE save_item.user_id = $1 AND u.is_deleted=FALSE AND ${conditions.join(
+      LEFT JOIN LATERAL (
+          SELECT ARRAY_AGG(JSONB_BUILD_OBJECT('id', img.id, 'image', img.image) ORDER BY img.id) AS images
+          FROM item_images img
+          WHERE img.item_id = orig.id
+      ) orig_images ON TRUE
+      WHERE save_item.user_id = $1 AND u.is_deleted=FALSE AND (${conditions.join(
       " OR "
-    )} 
+    )}) 
       GROUP BY
         item.id,
         item.user_id,
@@ -2148,31 +2036,22 @@ export const searchSaveItems = async (req, res) => {
         item.location,
         item.top_post,
         item.paid_status,
+        item.shared_post_id,
         u.username,
         u.image,
         ic.name,
         si.id,
         orig.id,
-        orig_u.id
+        orig_u.id,
+        orig_images.images
     `;
     const { rows } = await pool.query(getQuery, [id]);
     return res
       .status(200)
       .json({
-        statusCode: 200, totalResults: rows.length, items: rows.map(row => ({
-          ...row,
-          original_post: row.shared_post_id ? {
-            id: row.shared_post_id,
-            title: row.original_title,
-            description: row.original_description,
-            price: row.original_price,
-            condition: row.original_condition,
-            location: row.original_location,
-            username: row.original_username,
-            user_image: row.original_user_image,
-            created_at: row.original_created_at
-          } : null
-        }))
+        statusCode: 200,
+        totalResults: rows.length,
+        items: rows
       });
   } catch (error) {
     console.error(error);
