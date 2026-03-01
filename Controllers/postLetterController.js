@@ -91,6 +91,7 @@ export const createPostLetter = async (req, res) => {
     //   mediaPath = `/letterMedia/${req.files[0].filename}`;
     // }
     console.log(mediaPath);
+    const isPaid = paid_status === "paid" || paid_status === true;
     const createQuery = `INSERT INTO post_letters (user_id,post_type,receiver_type,disc_category , disc_sub_category,name,address,email,
             contact_no,subject_place,post_date,greetings,introduction,body,form_of_appeal,video,
             signature_id,paid_status)
@@ -113,7 +114,7 @@ export const createPostLetter = async (req, res) => {
       form_of_appeal,
       image?.length > 0 ? null : mediaPath,
       signature_id,
-      paid_status,
+      isPaid,
     ]);
     if (result.rowCount === 1) {
       // if (req.files[0].mimetype.startsWith("image/")) {
@@ -388,7 +389,8 @@ export const updatePostLetter = async (req, res) => {
 
     if (paid_status !== undefined) {
       updateFields.push(`paid_status = $${queryParams.length + 1}`);
-      queryParams.push(paid_status);
+      const isPaid = paid_status === "paid" || paid_status === true;
+      queryParams.push(isPaid);
     }
 
     // Construct the full update query
@@ -2334,7 +2336,7 @@ export const getAllLettersByCategory = async (req, res) => {
     }, {});
 
     let data = Object.values(groupedLetters);
-    
+
     // Sort subcategories by the newest letter's created_at (DESC)
     data.sort((a, b) => {
       const aNewest = new Date(a.total_result.letters[0]?.post_date || a.total_result.letters[0]?.created_at || 0);

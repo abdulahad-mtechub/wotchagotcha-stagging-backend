@@ -231,6 +231,7 @@ export const getItemSubCategories = async (req, res) => {
               i.location,
               i.region,
               i.paid_status,
+              i.shared_post_id,
               i.created_at,
               COALESCE(
                 ARRAY_AGG(
@@ -238,12 +239,33 @@ export const getItemSubCategories = async (req, res) => {
                   ORDER BY ii.id
                 ) FILTER (WHERE ii.id IS NOT NULL),
                 ARRAY[]::jsonb[]
-              ) AS images
+              ) AS images,
+              CASE WHEN i.shared_post_id IS NOT NULL THEN
+                JSONB_BUILD_OBJECT(
+                  'id', orig.id,
+                  'title', orig.title,
+                  'description', orig.description,
+                  'price', orig.price,
+                  'condition', orig.condition,
+                  'location', orig.location,
+                  'username', orig_u.username,
+                  'user_image', orig_u.image,
+                  'created_at', orig.created_at,
+                  'images', COALESCE(orig_images.images, ARRAY[]::jsonb[])
+                )
+              ELSE NULL END AS original_post
             FROM item i
             LEFT JOIN item_images ii ON i.id = ii.item_id
             LEFT JOIN users u ON i.user_id = u.id
+            LEFT JOIN item orig ON i.shared_post_id = orig.id
+            LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+            LEFT JOIN LATERAL (
+              SELECT ARRAY_AGG(JSONB_BUILD_OBJECT('id', img.id, 'image', img.image) ORDER BY img.id) AS images
+              FROM item_images img
+              WHERE img.item_id = orig.id
+            ) orig_images ON TRUE
             WHERE i.item_category = $1 AND i.sub_category = $2 AND i.status != 'blocked'
-            GROUP BY i.id, i.user_id, u.username, u.image, i.item_category, i.title, i.description, i.price, i.condition, i.location, i.region, i.paid_status, i.created_at
+            GROUP BY i.id, i.user_id, u.username, u.image, i.item_category, i.title, i.description, i.price, i.condition, i.location, i.region, i.paid_status, i.shared_post_id, i.created_at, orig.id, orig_u.id, orig_images.images
             ORDER BY i.created_at DESC
             LIMIT $3
           `;
