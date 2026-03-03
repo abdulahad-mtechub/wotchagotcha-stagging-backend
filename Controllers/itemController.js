@@ -17,6 +17,8 @@ export const createItem = async (req, res) => {
       region,
       paid_status,
       shared_post_id,
+      country_code,
+      country,
     } = req.body;
 
     if (!user_id) {
@@ -42,8 +44,8 @@ export const createItem = async (req, res) => {
     const effectiveCondition = condition || "new";
 
     const isPaid = paid_status === "paid" || paid_status === true;
-    const createQuery = `INSERT INTO item (user_id,item_category, sub_category, title, description, price,condition,location,paid_status,region, shared_post_id) 
-        VALUES ($1, $2, $3, $4, $5,$6,$7,$8,$9,$10, $11) RETURNING *`;
+    const createQuery = `INSERT INTO item (user_id,item_category, sub_category, title, description, price,condition,location,paid_status,region, shared_post_id, country_code, country) 
+        VALUES ($1, $2, $3, $4, $5,$6,$7,$8,$9,$10, $11, $12, $13) RETURNING *`;
     const result = await pool.query(createQuery, [
       user_id,
       effectiveCategory,
@@ -56,6 +58,8 @@ export const createItem = async (req, res) => {
       isPaid,
       effectiveRegion,
       shared_post_id || null,
+      country_code ? country_code.toUpperCase().substring(0, 2) : null,
+      country || null,
     ]);
 
     if (result.rowCount === 1 && Array.isArray(images)) {
@@ -83,6 +87,8 @@ export const createItem = async (req, res) => {
           ic.name AS item_category_name,
           item.title,
           item.region,
+          item.country_code,
+          item.country,
           item.description,
           item.price,
           item.condition,
@@ -129,6 +135,8 @@ export const createItem = async (req, res) => {
           item.item_category,
           item.sub_category,
           item.title,
+          item.country_code,
+          item.country,
           item.description,
           item.price,
           item.condition,
@@ -190,6 +198,8 @@ export const updateItem = async (req, res) => {
       paid_status,
       oldImagesId,
       newImages, // This is the array of image URLs
+      country_code,
+      country,
     } = req.body;
 
     const oldImageArray = Array.isArray(oldImagesId)
@@ -238,7 +248,7 @@ export const updateItem = async (req, res) => {
     }
 
     const isPaid = paid_status === "paid" || paid_status === true;
-    const updateProduct = `UPDATE item SET item_category=$1, sub_category=$2, title=$3,description=$4,price=$5,condition=$6,location=$7,region=$8,paid_status=$9, "updated_at"=NOW() WHERE id=$10 RETURNING *`;
+    const updateProduct = `UPDATE item SET item_category=$1, sub_category=$2, title=$3,description=$4,price=$5,condition=$6,location=$7,region=$8,paid_status=$9,country_code=$10, country=$11, "updated_at"=NOW() WHERE id=$12 RETURNING *`;
     const result = await pool.query(updateProduct, [
       item_category,
       sub_category || null,
@@ -249,6 +259,8 @@ export const updateItem = async (req, res) => {
       location,
       region,
       isPaid,
+      country_code ? country_code.toUpperCase().substring(0, 2) : null,
+      country || null,
       item_id,
     ]);
     if (result.rowCount === 1) {
@@ -264,6 +276,8 @@ export const updateItem = async (req, res) => {
               isc.name AS item_sub_category_name,
               item.title,
               item.region,
+              item.country_code,
+              item.country,
               item.description,
               item.price,
               item.condition,
@@ -310,6 +324,8 @@ export const updateItem = async (req, res) => {
               item.item_category,
               item.sub_category,
               item.title,
+              item.country_code,
+              item.country,
               item.description,
               item.price,
               item.condition,
@@ -665,6 +681,8 @@ export const getSpecificItem = async (req, res) => {
         ic.name AS item_category_name,
         item.title,
         item.region,
+        item.country_code,
+        item.country,
         item.description,
         item.price,
         item.condition,
@@ -725,6 +743,8 @@ export const getSpecificItem = async (req, res) => {
         item.user_id,
         item.item_category,
         item.title,
+        item.country_code,
+        item.country,
         item.description,
         item.price,
         item.condition,
@@ -785,6 +805,8 @@ export const getAllItemByCatgory = async (req, res) => {
           ic.name AS item_category_name,
           item.title,
           item.region,
+          item.country_code,
+          item.country,
           item.description,
           item.price,
           item.condition,
@@ -831,6 +853,7 @@ export const getAllItemByCatgory = async (req, res) => {
           item.item_category,
           item.title,
           item.region,
+          item.country_code,
           item.description,
           item.price,
           item.condition,
@@ -907,6 +930,7 @@ export const getAllItemsByUser = async (req, res) => {
         ic.name AS item_category_name,
         item.title,
         item.region,
+        item.country_code,
         item.description,
         item.price,
         item.condition,
@@ -952,6 +976,7 @@ export const getAllItemsByUser = async (req, res) => {
         item.item_category,
         item.title,
         item.region,
+        item.country_code,
         item.description,
         item.price,
         item.condition,
@@ -1024,6 +1049,7 @@ export const getAllItems = async (req, res) => {
         ic.name AS item_category_name,
         item.title,
         item.region,
+        item.country_code,
         item.description,
         item.price,
         item.condition,
@@ -1068,6 +1094,7 @@ export const getAllItems = async (req, res) => {
         item.user_id,
         item.item_category,
         item.title,
+        item.country_code,
         item.description,
         item.price,
         item.condition,
@@ -1142,6 +1169,7 @@ export const getAllItemsByPaid = async (req, res) => {
           ic.name AS item_category_name,
           item.title,
           item.region,
+          item.country_code,
           item.description,
           item.price,
           item.condition,
