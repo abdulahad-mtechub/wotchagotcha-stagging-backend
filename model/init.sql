@@ -434,6 +434,8 @@ CREATE TABLE IF NOT EXISTS public.item (
     condition VARCHAR(255) NOT NULL,
     location VARCHAR(255) NOT NULL,
     region VARCHAR(255) NOT NULL,
+    country_code VARCHAR(2),
+    country VARCHAR(255),
     top_post BOOLEAN NOT NULL DEFAULT FALSE,
     top_added_date TIMESTAMPTZ,
     paid_status BOOLEAN NOT NULL,

@@ -212,11 +212,70 @@ export const getItemSubCategories = async (req, res) => {
 
     // optionally include items for each subcategory when requested
     const includeItems = req.query.include_items === '1' || req.query.include_items === 'true';
+    // filters: region, country_code/country, location (state/province), price range, condition
+    const regionFilter = req.query.region || null;
+    const countryFilter = req.query.country_code
+      ? req.query.country_code.toUpperCase().substring(0, 2)
+      : req.query.country || null;
+    const locationFilter = req.query.location || null;
+    const minPriceFilter = req.query.min_price ? Number(req.query.min_price) : null;
+    const maxPriceFilter = req.query.max_price ? Number(req.query.max_price) : null;
+    const conditionFilter = req.query.condition || null;
     const itemLimit = parseInt(req.query.item_limit, 10) || 10;
     if (includeItems) {
       // fetch items for each subcategory with images
       for (const r of rows) {
         try {
+          // Build items query dynamically so filters only apply when provided
+          const itemParams = [r.category_id, r.id];
+          const itemWhere = ["i.item_category = $1", "i.sub_category = $2", "i.status != 'blocked'"];
+          let idx = itemParams.length;
+
+          if (regionFilter) {
+            idx += 1;
+            itemParams.push(regionFilter);
+            itemWhere.push(`LOWER(i.region) = LOWER($${idx})`);
+          }
+
+          // country_code takes precedence if provided
+          if (req.query.country_code) {
+            idx += 1;
+            itemParams.push(countryFilter); // already uppercased in outer scope
+            itemWhere.push(`i.country_code = $${idx}`);
+          } else if (req.query.country) {
+            idx += 1;
+            itemParams.push(`%${countryFilter}%`);
+            itemWhere.push(`i.country ILIKE $${idx}`);
+          }
+
+          if (locationFilter) {
+            idx += 1;
+            itemParams.push(`%${locationFilter}%`);
+            itemWhere.push(`i.location ILIKE $${idx}`);
+          }
+
+          if (minPriceFilter !== null && !Number.isNaN(minPriceFilter)) {
+            idx += 1;
+            itemParams.push(minPriceFilter);
+            itemWhere.push(`(NULLIF(REGEXP_REPLACE(i.price::text, '[^0-9.]', '', 'g'), '')::numeric >= $${idx})`);
+          }
+
+          if (maxPriceFilter !== null && !Number.isNaN(maxPriceFilter)) {
+            idx += 1;
+            itemParams.push(maxPriceFilter);
+            itemWhere.push(`(NULLIF(REGEXP_REPLACE(i.price::text, '[^0-9.]', '', 'g'), '')::numeric <= $${idx})`);
+          }
+
+          if (conditionFilter) {
+            idx += 1;
+            itemParams.push(conditionFilter);
+            itemWhere.push(`i.condition = $${idx}`);
+          }
+
+          // final param is LIMIT
+          idx += 1;
+          itemParams.push(itemLimit);
+
           const itemsQ = `
             SELECT 
               i.id,
@@ -230,6 +289,8 @@ export const getItemSubCategories = async (req, res) => {
               i.condition,
               i.location,
               i.region,
+              i.country_code,
+              i.country,
               i.paid_status,
               i.shared_post_id,
               i.created_at,
@@ -251,6 +312,8 @@ export const getItemSubCategories = async (req, res) => {
                   'username', orig_u.username,
                   'user_image', orig_u.image,
                   'created_at', orig.created_at,
+                  'country', orig.country,
+                  'country_code', orig.country_code,
                   'images', COALESCE(orig_images.images, ARRAY[]::jsonb[])
                 )
               ELSE NULL END AS original_post
@@ -264,12 +327,13 @@ export const getItemSubCategories = async (req, res) => {
               FROM item_images img
               WHERE img.item_id = orig.id
             ) orig_images ON TRUE
-            WHERE i.item_category = $1 AND i.sub_category = $2 AND i.status != 'blocked'
+            WHERE ${itemWhere.join(' AND ')}
             GROUP BY i.id, i.user_id, u.username, u.image, i.item_category, i.title, i.description, i.price, i.condition, i.location, i.region, i.paid_status, i.shared_post_id, i.created_at, orig.id, orig_u.id, orig_images.images
             ORDER BY i.created_at DESC
-            LIMIT $3
+            LIMIT $${idx}
           `;
-          const itemsRes = await pool.query(itemsQ, [r.category_id, r.id, itemLimit]);
+
+          const itemsRes = await pool.query(itemsQ, itemParams);
           r.items = itemsRes.rows;
           r.items_count = itemsRes.rowCount;
         } catch (err) {
