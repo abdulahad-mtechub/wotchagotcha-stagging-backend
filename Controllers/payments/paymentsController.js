@@ -281,21 +281,19 @@ export const verifyCheckoutSession = async (req, res) => {
       // Create subscription record (one month trial) idempotently
       let subscription = null;
       try {
-        await pool.query(`UPDATE user_subscriptions SET status='cancelled', is_active=false WHERE user_id=$1 AND status='active'`, [userId]);
-
         const expiresAtDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-        const existSub = await pool.query(`SELECT * FROM user_subscriptions WHERE provider_transaction_id = $1 AND user_id = $2 LIMIT 1`, [sessionId, userId]);
+        const existSub = await pool.query(`SELECT * FROM subscription WHERE transaction_id = $1 AND user_id = $2 LIMIT 1`, [transaction.id, userId]);
+
         if (existSub.rows && existSub.rows[0]) {
           subscription = existSub.rows[0];
         } else {
           const insertSubQuery = `
-            INSERT INTO user_subscriptions
-            (user_id, plan_id, provider, provider_transaction_id, stripe_price_id, quantity, receipt_data, start_date, expires_at, status, is_active, created_at, updated_at)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),$8,'active',TRUE,NOW(),NOW())
+            INSERT INTO subscription
+            (user_id, plan_id, price, status, transaction_id, expired_at, created_at, updated_at)
+            VALUES ($1, $2, $3, 'active', $4, $5, NOW(), NOW())
             RETURNING *
           `;
-          const receipt = JSON.stringify({ free_trial: true });
-          const subParams = [userId, planIdValue, 'free', sessionId, null, 1, receipt, expiresAtDate];
+          const subParams = [userId, planIdValue, 0.00, transaction.id, expiresAtDate];
           try {
             const subResult = await pool.query(insertSubQuery, subParams);
             if (subResult.rows && subResult.rows[0]) subscription = subResult.rows[0];
@@ -304,8 +302,17 @@ export const verifyCheckoutSession = async (req, res) => {
           }
         }
 
-        // Optionally mark user premium
-        try { await pool.query(`UPDATE users SET is_premium = TRUE WHERE id = $1`, [userId]); } catch (e) { /* ignore */ }
+        // Update user status
+        const planIdLower = (planIdValue || "").toLowerCase();
+        let updateQuery = "UPDATE users SET is_premium = TRUE";
+        if (planIdLower.includes("banner")) {
+          updateQuery += ", banner_subscript_key = $1";
+        } else {
+          updateQuery += ", premium_subscription_key = $1";
+        }
+        updateQuery += " WHERE id = $2";
+
+        try { await pool.query(updateQuery, [planIdValue, userId]); } catch (e) { console.warn('Failed to update user status for trial:', e.message); }
       } catch (e) {
         console.warn('Failed to create free trial subscription:', e.message);
       }
@@ -358,6 +365,8 @@ export const verifyCheckoutSession = async (req, res) => {
       providerTransactionId = sub.id;
     }
 
+    console.log(`[DEBUG] verifyCheckoutSession: mode=${paymentMode}, paid=${paid}, providerTransactionId=${providerTransactionId}`);
+
     if (!paid) return sendErrorResponse(res, 400, 'NOT_PAID', 'Payment not completed');
 
     // Save transaction to DB (idempotent)
@@ -403,35 +412,64 @@ export const verifyCheckoutSession = async (req, res) => {
 
     // Handle subscription persistence
     let subscriptionRecord = null;
-    if (paymentMode === 'subscription') {
+    if (plan_id) {
       try {
-        await pool.query(`UPDATE user_subscriptions SET status='cancelled', is_active=false WHERE user_id=$1 AND status='active'`, [userId]);
-
         // Determine expires_at
         let expiresAt = null;
-        try {
-          const stripeSub = await stripeInstance.subscriptions.retrieve(providerTransactionId);
-          expiresAt = stripeSub.current_period_end ? new Date(stripeSub.current_period_end * 1000) : null;
-        } catch (e) {
-          console.warn('Could not retrieve subscription details for expires_at:', e.message);
+        if (paymentMode === 'subscription') {
+          try {
+            const stripeSub = await stripeInstance.subscriptions.retrieve(providerTransactionId);
+            expiresAt = stripeSub.current_period_end ? new Date(stripeSub.current_period_end * 1000) : null;
+          } catch (e) {
+            console.warn('Could not retrieve subscription details for expires_at:', e.message);
+          }
+        } else {
+          // Default to 1 month for 'payment' mode subscriptions
+          expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
         }
 
-        const existSub = await pool.query(`SELECT * FROM user_subscriptions WHERE provider_transaction_id = $1 AND user_id = $2 LIMIT 1`, [providerTransactionId, userId]);
+        const transactionId = transaction?.id || null;
+        if (!transactionId) {
+          console.warn('[DEBUG] No transaction ID found, skipping subscription creation');
+          // If we are here, it means we have a plan_id but no transaction link. 
+          // We can still try to find a transaction by providerTransactionId
+        }
+
+        const existSub = await pool.query(`SELECT * FROM subscription WHERE (transaction_id = $1 OR plan_id = $2) AND user_id = $3 AND status = 'active' LIMIT 1`, [transactionId, plan_id, userId]);
         if (existSub.rows && existSub.rows[0]) {
           subscriptionRecord = existSub.rows[0];
+          console.log(`[DEBUG] Existing active subscription found: ID=${subscriptionRecord.id}`);
         } else {
+          console.log(`[DEBUG] Creating new subscription record for user=${userId}, plan=${plan_id}`);
           const insertSubQuery = `
-            INSERT INTO user_subscriptions
-            (user_id, plan_id, provider, provider_transaction_id, stripe_price_id, quantity, receipt_data, start_date, expires_at, status, is_active, created_at, updated_at)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,NOW(),$8,'active',TRUE,NOW(),NOW())
+            INSERT INTO subscription
+            (user_id, plan_id, price, status, transaction_id, expired_at, created_at, updated_at)
+            VALUES ($1, $2, $3, 'active', $4, $5, NOW(), NOW())
             RETURNING *
           `;
-          const subParams = [userId, plan_id ? String(plan_id) : null, 'stripe', providerTransactionId, priceId, 1, rawResponse, expiresAt];
+          const amountDecimal = amountCents ? (Number(amountCents) / 100).toFixed(2) : '0.00';
+          const subParams = [userId, String(plan_id), amountDecimal, transactionId, expiresAt];
           const subResult = await pool.query(insertSubQuery, subParams);
-          if (subResult.rows && subResult.rows[0]) subscriptionRecord = subResult.rows[0];
+          if (subResult.rows && subResult.rows[0]) {
+            subscriptionRecord = subResult.rows[0];
+            console.log(`[DEBUG] Subscription record created: ID=${subscriptionRecord.id}`);
+          }
         }
+
+        // Update user status
+        console.log(`[DEBUG] Updating user status for plan_id: ${plan_id}`);
+        const planIdLower = String(plan_id).toLowerCase();
+        let updateQuery = "UPDATE users SET id = id"; // No-op base
+        if (planIdLower.includes("banner")) {
+          updateQuery = "UPDATE users SET banner_subscript_key = $1 WHERE id = $2";
+        } else {
+          updateQuery = "UPDATE users SET premium_subscription_key = $1, is_premium = TRUE WHERE id = $2";
+        }
+
+        try { await pool.query(updateQuery, [plan_id, userId]); } catch (e) { console.warn('Failed to update user status:', e.message); }
+
       } catch (e) {
-        console.warn('Failed to create/check user_subscriptions:', e.message);
+        console.warn('Failed to create/check subscription record:', e.message);
       }
     }
 
