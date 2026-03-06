@@ -46,6 +46,7 @@ export const create = async (req, res) => {
                     v.shared_post_id,
                     u.username AS username,
                     u.image AS userImage,
+                    u.is_premium AS premium,
                     v.created_at AS created_at,
                     orig.name AS original_name,
                     orig.description AS original_description,
@@ -60,7 +61,7 @@ export const create = async (req, res) => {
                 LEFT JOIN sports orig ON v.shared_post_id = orig.id
                 LEFT JOIN users orig_u ON orig.user_id = orig_u.id
                 WHERE v.id = $1
-                GROUP BY v.id, u.username, u.image, vc.name, vsc.name, orig.id, orig_u.id
+                GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, vsc.name, orig.id, orig_u.id
             `;
       const data = await pool.query(query, [result.rows[0].id]);
       const sportData = data.rows[0];
@@ -144,6 +145,7 @@ export const update = async (req, res) => {
         v.shared_post_id,
         u.username AS username,
         u.image AS userImage,
+        u.is_premium AS premium,
         v.created_at AS created_at,
         orig.name AS original_name,
         orig.description AS original_description,
@@ -158,7 +160,7 @@ export const update = async (req, res) => {
     LEFT JOIN sports orig ON v.shared_post_id = orig.id
     LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.id = $1
-    GROUP BY v.id, u.username, u.image,vc.name, vsc.name, orig.id, orig_u.id;
+    GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, vsc.name, orig.id, orig_u.id;
     
      `;
       const data = await pool.query(query, [result.rows[0].id]);
@@ -315,6 +317,7 @@ export const getComments = async (req, res) => {
       u.id AS user_id,
       u.username AS username,
       u.image AS user_image,
+      u.is_premium AS premium,
       c.created_at AS created_at,
       c.updated_at AS updated_at
     FROM sport_comment c
@@ -356,6 +359,7 @@ export const getTopSportWithMostComments = async (req, res) => {
       v.user_id,
       u.username,
       u.image AS user_image,
+      u.is_premium AS premium,
       v.created_at,
       v.shared_post_id,
       orig.name AS original_name,
@@ -374,7 +378,7 @@ export const getTopSportWithMostComments = async (req, res) => {
     LEFT JOIN sport_like l ON v.id = l.sport_id
     LEFT JOIN sports orig ON v.shared_post_id = orig.id
     LEFT JOIN users orig_u ON orig.user_id = orig_u.id
-    GROUP BY v.id, vc.name, vsc.name, u.username, u.image, orig.id, orig_u.id
+    GROUP BY v.id, vc.name, vsc.name, u.username, u.image, u.is_premium, orig.id, orig_u.id
     ORDER BY comment_count DESC
     LIMIT 1;
         `;
@@ -455,6 +459,7 @@ SELECT
   v.shared_post_id,
   u.username,
   u.image AS user_image,
+  u.is_premium AS premium,
   v.created_at,
   COUNT(DISTINCT c.id) AS comment_count,
   COUNT(DISTINCT l.id) AS total_likes,
@@ -472,7 +477,7 @@ LEFT JOIN sport_like l ON v.id = l.sport_id
 LEFT JOIN sports orig ON v.shared_post_id = orig.id
 LEFT JOIN users orig_u ON orig.user_id = orig_u.id
 WHERE v.sub_category_id = $1 AND v.status != 'blocked'
-GROUP BY v.id, u.username, u.image, orig.name, orig.description, orig.image, orig_u.username, orig_u.image, orig.created_at
+GROUP BY v.id, u.username, u.image, u.is_premium, orig.name, orig.description, orig.image, orig_u.username, orig_u.image, orig.created_at
 ORDER BY v.created_at DESC
 
       `;
@@ -580,6 +585,7 @@ export const getSportByUserId = async (req, res) => {
               v.shared_post_id,
               u.username,
               u.image AS user_image,
+              u.is_premium AS premium,
               v.created_at,
               orig.name AS original_name,
               orig.description AS original_description,
@@ -598,7 +604,7 @@ export const getSportByUserId = async (req, res) => {
             LEFT JOIN sports orig ON v.shared_post_id = orig.id
             LEFT JOIN users orig_u ON orig.user_id = orig_u.id
             WHERE v.user_id = $1
-            GROUP BY v.id, vc.name, vsc.name, u.username, u.image, vc.french_name, vsc.french_name, orig.id, orig_u.id
+            GROUP BY v.id, vc.name, vsc.name, u.username, u.image, u.is_premium, vc.french_name, vsc.french_name, orig.id, orig_u.id
             ORDER BY v.created_at DESC
             LIMIT $2 OFFSET $3;
         `;
@@ -781,6 +787,7 @@ export const searchSportsByTitle = async (req, res) => {
         v.shared_post_id,
         u.username,
         u.image AS user_image,
+        u.is_premium AS premium,
         v.created_at,
         orig.name AS original_name,
         orig.description AS original_description,
@@ -801,7 +808,7 @@ export const searchSportsByTitle = async (req, res) => {
         GROUP BY sport_id
       ) likes ON v.id = likes.sport_id
       WHERE v.name ILIKE $1
-      GROUP BY v.id, vc.name, vsc.name, u.username, u.image, orig.id, orig_u.id, likes.total_likes
+      GROUP BY v.id, vc.name, vsc.name, u.username, u.image, u.is_premium, orig.id, orig_u.id, likes.total_likes
       ORDER BY v.created_at DESC
       LIMIT $2 OFFSET $3
     `;

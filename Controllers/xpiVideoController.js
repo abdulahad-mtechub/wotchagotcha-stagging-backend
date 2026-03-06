@@ -70,6 +70,7 @@ export const createXpiVideo = async (req, res) => {
           v.shared_post_id,
           u.username AS username,
           u.image AS user_image,
+          u.is_premium AS premium,
           orig.name AS original_name,
           orig.description AS original_description,
           orig.video AS original_video,
@@ -84,7 +85,7 @@ export const createXpiVideo = async (req, res) => {
         LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
         LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE v.id = $1
-        GROUP BY v.id, u.username, u.image, vc.name, vsc.name, orig.id, orig_u.id`;
+        GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, vsc.name, orig.id, orig_u.id`;
 
       const data = await pool.query(query, [result.rows[0].id]);
 
@@ -258,6 +259,7 @@ export const updateXpiVideo = async (req, res) => {
           v.shared_post_id,
           u.username AS username,
           u.image AS user_image,
+          u.is_premium AS premium,
           orig.name AS original_name,
           orig.description AS original_description,
           orig.video AS original_video,
@@ -272,7 +274,7 @@ export const updateXpiVideo = async (req, res) => {
         LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
         LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE v.id = $1
-        GROUP BY v.id, u.username, u.image, vc.name, vsc.name, orig.id, orig_u.id`;
+        GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, vsc.name, orig.id, orig_u.id`;
 
       const data = await pool.query(query, [result.rows[0].id]);
 
@@ -386,7 +388,8 @@ export const sendComment = async (req, res) => {
             v.comment AS comment,
             u.id AS userId,
             u.username AS username,
-            u.image AS userImage
+            u.image AS userImage,
+            u.is_premium AS premium
             FROM video_comment v
             LEFT JOIN users u ON v.user_id = u.id
             WHERE v.id=$1
@@ -663,6 +666,7 @@ export const getSpecificVideo = async (req, res) => {
         v.user_id,
         u.username AS username,
         u.image AS userImage,
+        u.is_premium AS premium,
         (
           SELECT COALESCE(json_agg(
             json_build_object(
@@ -728,7 +732,7 @@ export const getSpecificVideo = async (req, res) => {
 
     sqlQuery += `
       WHERE v.id = $1 AND u.is_deleted = FALSE
-      GROUP BY v.id, u.username, u.image, vc.name, vsc.name, vc.french_name, vsc.french_name, orig.id, orig_u.id`;
+      GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, vsc.name, vc.french_name, vsc.french_name, orig.id, orig_u.id`;
 
     if (user_id) {
       sqlQuery += `, pl.id`;
@@ -854,6 +858,7 @@ export const getAllVideos = async (req, res) => {
         v.shared_post_id,
         u.username AS username,
         u.image AS userImage,
+        u.is_premium AS premium,
         orig.name AS original_name,
         orig.description AS original_description,
         orig.video AS original_video,
@@ -868,7 +873,7 @@ export const getAllVideos = async (req, res) => {
       LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE u.is_deleted = FALSE
-      GROUP BY v.id, u.username, u.image, vc.name, vsc.name, vc.french_name, vsc.french_name, orig.id, orig_u.id
+      GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, vsc.name, vc.french_name, vsc.french_name, orig.id, orig_u.id
       ORDER BY v.created_at DESC
     `;
 
@@ -1038,7 +1043,7 @@ export const getAllVideosByUser = async (req, res) => {
       LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.user_id = $1
-      GROUP BY v.id, u.username, u.image, vc.name, vsc.name, vc.french_name, vsc.french_name, orig.id, orig_u.id
+      GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, vsc.name, vc.french_name, vsc.french_name, orig.id, orig_u.id
       LIMIT $2 OFFSET $3;
     `;
 
@@ -1112,7 +1117,8 @@ export const getAllVideosByCategory = async (req, res) => {
     v.user_id,
     v.shared_post_id,
     u.username AS username, 
-    u.image AS user_image,  
+    u.image AS user_image,
+    u.is_premium AS premium,
     (
       SELECT COUNT(*) FROM video_comment vc WHERE vc.video_id = v.id
     ) AS comment_count,
@@ -1140,6 +1146,7 @@ export const getAllVideosByCategory = async (req, res) => {
   LEFT JOIN video_sub_category orig_vsc ON orig.sub_category = orig_vsc.id
   WHERE (v.video_category = $1 OR (v.shared_post_id IS NOT NULL AND orig.video_category = $1))
     AND u.is_deleted = FALSE AND v.status != 'blocked'
+  GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, vsc.name, vc.french_name, vsc.french_name, orig.id, orig_u.id, orig_vsc.name, orig_vsc.french_name, vsc."index", orig_vsc."index"
   ORDER BY v.created_at DESC
   LIMIT $2 OFFSET $3;
 `;
@@ -1178,6 +1185,7 @@ export const getAllVideosByCategory = async (req, res) => {
         user_id: row.user_id,
         username: row.username,
         userimage: row.user_image,
+        premium: row.premium,
         created_at: row.video_created_at,
         comment_count: row.comment_count,
         total_likes: row.total_likes,
@@ -1299,7 +1307,7 @@ export const getMostViewedVideosByCategory = async (req, res) => {
       LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.video_category = $1 AND u.is_deleted = FALSE
-      GROUP BY v.id, u.username, u.image, vc.name, vsc.name, vc.french_name, vsc.french_name, orig.id, orig_u.id
+      GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, vsc.name, vc.french_name, vsc.french_name, orig.id, orig_u.id
       ORDER BY view_count DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -1363,6 +1371,7 @@ export const getAllTrendingVideosByCategory = async (req, res) => {
       v.user_id,
       u.username AS username,
       u.image AS userImage,
+      u.is_premium AS premium,
       v.shared_post_id,
       orig.name AS original_name,
       orig.description AS original_description,
@@ -1384,7 +1393,7 @@ export const getAllTrendingVideosByCategory = async (req, res) => {
     LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
     LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.video_category = $1 AND u.is_deleted=FALSE
-    GROUP BY v.id, u.username, u.image,vc.name, vc.french_name, orig.id, orig_u.id
+    GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, vc.french_name, orig.id, orig_u.id
     ORDER BY  view_count DESC,video_created_at DESC
     LIMIT $2 OFFSET $3;
     
@@ -1453,6 +1462,7 @@ export const getAllRecentVideosByCategory = async (req, res) => {
             v.user_id,
             u.username AS username,
             u.image AS userImage,
+            u.is_premium AS premium,
             v.shared_post_id,
             orig.name AS original_name,
             orig.description AS original_description,
@@ -1468,6 +1478,7 @@ export const getAllRecentVideosByCategory = async (req, res) => {
         LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
         LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE v.video_category=$3 AND u.is_deleted=FALSE
+        GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, orig.id, orig_u.id
         ORDER BY v.created_at DESC
         LIMIT $1 OFFSET $2;`;
 
@@ -1679,6 +1690,7 @@ export const searchVideos = async (req, res) => {
       LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE ${conditions.join(" OR ")} AND u.is_deleted=FALSE
+      GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, orig.id, orig_u.id
       ORDER BY v.created_at DESC`;
 
     // const query = `SELECT
@@ -1782,7 +1794,7 @@ export const createTopVideo = async (req, res) => {
     LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
     LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.id = $1
-    GROUP BY v.id, u.username, u.image,vc.name, orig.id, orig_u.id
+    GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, orig.id, orig_u.id
      `;
 
       const { rows } = await pool.query(query, [video_id]);
@@ -1845,7 +1857,7 @@ export const getTopVideo = async (req, res) => {
       LEFT JOIN xpi_videos orig ON v.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE top=$1
-      GROUP BY v.id, u.username, u.image, vc.name, orig.id, orig_u.id
+      GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, orig.id, orig_u.id
       ORDER BY v.created_at DESC
      `;
 

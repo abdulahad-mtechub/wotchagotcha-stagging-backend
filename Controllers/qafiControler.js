@@ -41,6 +41,7 @@ export const createQafi = async (req, res) => {
           v.shared_post_id,
           u.username AS username,
           u.image AS userImage,
+          u.is_premium AS premium,
           orig.description AS original_description,
           orig.image AS original_image,
           orig.video AS original_video,
@@ -52,7 +53,7 @@ export const createQafi = async (req, res) => {
         LEFT JOIN QAFI orig ON v.shared_post_id = orig.id
         LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE v.id = $1
-        GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;
+        GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id;
       `;
       const data = await pool.query(query, [result.rows[0].id]);
       const qafiData = data.rows[0];
@@ -180,6 +181,7 @@ export const updateQafi = async (req, res) => {
           v.shared_post_id,
           u.username AS username,
           u.image AS userImage,
+          u.is_premium AS premium,
           orig.description AS original_description,
           orig.image AS original_image,
           orig.video AS original_video,
@@ -191,7 +193,7 @@ export const updateQafi = async (req, res) => {
         LEFT JOIN QAFI orig ON v.shared_post_id = orig.id
         LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE v.id = $1
-        GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;
+        GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id;
       `;
       const data = await pool.query(query, [id]);
       const qafiData = data.rows[0];
@@ -289,6 +291,7 @@ export const sendComment = async (req, res) => {
             u.id AS userId,
             u.username AS username,
             u.image AS userImage,
+            u.is_premium AS premium,
             q.shared_post_id,
             orig.description AS original_description,
             orig.image AS original_image,
@@ -302,6 +305,7 @@ export const sendComment = async (req, res) => {
             LEFT JOIN QAFI orig ON q.shared_post_id = orig.id
             LEFT JOIN users orig_u ON orig.user_id = orig_u.id
             WHERE v.id=$1
+            GROUP BY v.id, u.username, u.image, u.is_premium, q.shared_post_id, orig.id, orig_u.id
             ORDER BY v.created_at DESC;
             `;
       const { rows } = await pool.query(commentQuery, [result.rows[0].id]);
@@ -350,6 +354,7 @@ export const getAllCommentsByQAFI = async (req, res) => {
       u.id AS userId,
       u.username AS username,
       u.image AS userImage,
+      u.is_premium AS premium,
       q.id AS qafi_id,
       q.description,
       q.category AS category_id,
@@ -507,6 +512,7 @@ export const getSpecificQafi = async (req, res) => {
     v.user_id,
     u.username AS username,
     u.image AS userImage,
+    u.is_premium AS premium,
     (
         SELECT COALESCE(json_agg(
             json_build_object(
@@ -548,7 +554,7 @@ JOIN users u ON v.user_id = u.id
 LEFT JOIN QAFI orig ON v.shared_post_id = orig.id
 LEFT JOIN users orig_u ON orig.user_id = orig_u.id
 WHERE v.id = $1 AND u.is_deleted=FALSE
-GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;
+GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id;
 
  
  `;
@@ -593,6 +599,7 @@ export const getAllQAFIs = async (req, res) => {
       v.shared_post_id,
       u.username AS username,
       u.image AS userImage,
+      u.is_premium AS premium,
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
@@ -610,7 +617,7 @@ export const getAllQAFIs = async (req, res) => {
     LEFT JOIN QAFI orig ON v.shared_post_id = orig.id
     LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE u.is_deleted = FALSE
-    GROUP BY v.id, u.username, u.image, c.id, sc.id, orig.id, orig_u.id
+    GROUP BY v.id, u.username, u.image, u.is_premium, c.id, sc.id, orig.id, orig_u.id
     ORDER BY v.created_at DESC`;
 
     if (req.query.page !== undefined && req.query.limit !== undefined) {
@@ -720,6 +727,7 @@ export const getAllQafisByUser = async (req, res) => {
       v.shared_post_id,
       u.username AS username,
       u.image AS userImage,
+      u.is_premium AS premium,
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
@@ -737,7 +745,7 @@ export const getAllQafisByUser = async (req, res) => {
     LEFT JOIN QAFI orig ON v.shared_post_id = orig.id
     LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.user_id = $1
-    GROUP BY v.id, u.username, u.image, c.id, sc.id, orig.id, orig_u.id
+    GROUP BY v.id, u.username, u.image, u.is_premium, c.id, sc.id, orig.id, orig_u.id
     LIMIT $2 OFFSET $3;`;
 
     const { rows } = await pool.query(query, [id, perPage, offset]);
@@ -805,6 +813,7 @@ export const getAllQafisByCategory = async (req, res) => {
       v.shared_post_id,
       u.username AS username,
       u.image AS user_image,
+      u.is_premium AS premium,
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
@@ -904,6 +913,7 @@ export const getTopQafiWithMostComments = async (req, res) => {
         q.user_id,
         u.username,
         u.image AS user_image,
+        u.is_premium AS premium,
         q.created_at,
         q.shared_post_id,
         orig.description AS original_description,
@@ -922,7 +932,7 @@ export const getTopQafiWithMostComments = async (req, res) => {
       LEFT JOIN like_qafi l ON q.id = l.QAFI_id
       LEFT JOIN QAFI orig ON q.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
-      GROUP BY q.id, qc.name, qsc.name, u.username, u.image, orig.id, orig_u.id
+      GROUP BY q.id, qc.name, qsc.name, u.username, u.image, u.is_premium, orig.id, orig_u.id
       ORDER BY comment_count DESC
       LIMIT 1;
     `;

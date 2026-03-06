@@ -282,6 +282,7 @@ export const getItemSubCategories = async (req, res) => {
               i.user_id,
               u.username AS username,
               u.image AS userImage,
+              u.is_premium AS premium,
               i.item_category,
               i.title,
               i.description,
@@ -328,7 +329,7 @@ export const getItemSubCategories = async (req, res) => {
               WHERE img.item_id = orig.id
             ) orig_images ON TRUE
             WHERE ${itemWhere.join(' AND ')}
-            GROUP BY i.id, i.user_id, u.username, u.image, i.item_category, i.title, i.description, i.price, i.condition, i.location, i.region, i.paid_status, i.shared_post_id, i.created_at, orig.id, orig_u.id, orig_images.images
+            GROUP BY i.id, i.user_id, u.username, u.image, u.is_premium, i.item_category, i.title, i.description, i.price, i.condition, i.location, i.region, i.paid_status, i.shared_post_id, i.created_at, orig.id, orig_u.id, orig_images.images
             ORDER BY i.created_at DESC
             LIMIT $${idx}
           `;

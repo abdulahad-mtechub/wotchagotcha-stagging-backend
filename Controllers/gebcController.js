@@ -43,6 +43,7 @@ export const createGEBC = async (req, res) => {
         v.shared_post_id,
         u.username AS username,
         u.image AS userImage,
+        u.is_premium AS premium,
         orig.description AS original_description,
         orig.image AS original_image,
         orig_u.username AS original_username,
@@ -53,7 +54,7 @@ export const createGEBC = async (req, res) => {
       LEFT JOIN GEBC orig ON v.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.id = $1
-      GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;`;
+      GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id;`;
       const data = await pool.query(query, [result.rows[0].id]);
       const gebcData = data.rows[0];
       if (gebcData.shared_post_id) {
@@ -197,6 +198,7 @@ export const updateGEBC = async (req, res) => {
         v.shared_post_id,
         u.username AS username,
         u.image AS userImage,
+        u.is_premium AS premium,
         orig.description AS original_description,
         orig.image AS original_image,
         orig_u.username AS original_username,
@@ -207,7 +209,7 @@ export const updateGEBC = async (req, res) => {
       LEFT JOIN GEBC orig ON v.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.id = $1
-      GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;`;
+      GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id;`;
       const data = await pool.query(query, [id]);
       const gebcData = data.rows[0];
       if (gebcData.shared_post_id) {
@@ -294,7 +296,8 @@ export const sendComment = async (req, res) => {
             v.comment AS comment,
             u.id AS userId,
             u.username AS username,
-            u.image AS userImage
+            u.image AS userImage,
+            u.is_premium AS premium
             FROM GEBC_comment v
             LEFT JOIN users u ON v.user_id = u.id
             WHERE v.id=$1
@@ -333,6 +336,7 @@ export const getAllCommentsByGEBC = async (req, res) => {
         u.id AS userId,
         u.username AS username,
         u.image AS userImage,
+        u.is_premium AS premium,
         g.id AS gebc_id,
         g.description,
         g.category AS category_id,
@@ -465,6 +469,7 @@ export const getSpecificGEBC = async (req, res) => {
     v.shared_post_id,
     u.username AS username,
     u.image AS userImage,
+    u.is_premium AS premium,
     (
         SELECT COALESCE(json_agg(
             json_build_object(
@@ -504,7 +509,7 @@ JOIN users u ON v.user_id = u.id
 LEFT JOIN GEBC orig ON v.shared_post_id = orig.id
 LEFT JOIN users orig_u ON orig.user_id = orig_u.id
 WHERE v.id = $1 AND u.is_deleted=FALSE
-GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;
+GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id;
  `;
 
     const { rows } = await pool.query(query, [id]);
@@ -548,6 +553,7 @@ export const getAllGEBCs = async (req, res) => {
       v.shared_post_id,
       u.username AS username,
       u.image AS userImage,
+      u.is_premium AS premium,
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
@@ -674,6 +680,7 @@ export const getAllGEBCByUser = async (req, res) => {
       v.shared_post_id,
       u.username AS username,
       u.image AS userImage,
+      u.is_premium AS premium,
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
@@ -751,6 +758,7 @@ export const getAllGEBCsByCategory = async (req, res) => {
       v.shared_post_id,
       u.username AS username,
       u.image AS user_image,
+      u.is_premium AS premium,
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
