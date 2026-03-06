@@ -51,6 +51,7 @@ export const create = async (req, res) => {
         v.shared_post_id,
         u.username AS username,
         u.image AS userImage,
+        u.is_premium AS premium,
         v.created_at AS created_at,
         orig.name AS original_name,
         orig.description AS original_description,
@@ -66,7 +67,7 @@ export const create = async (req, res) => {
     LEFT JOIN fan_star_videos orig ON v.shared_post_id = orig.id
     LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.id = $1
-    GROUP BY v.id, u.username, u.image, vc.name, vsc.name, orig.id, orig_u.id;
+    GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, vsc.name, orig.id, orig_u.id;
     
      
      `;
@@ -169,6 +170,7 @@ export const update = async (req, res) => {
         v.shared_post_id,
         u.username AS username,
         u.image AS userImage,
+        u.is_premium AS premium,
         v.created_at AS created_at,
         orig.name AS original_name,
         orig.description AS original_description,
@@ -184,7 +186,7 @@ export const update = async (req, res) => {
     LEFT JOIN fan_star_videos orig ON v.shared_post_id = orig.id
     LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.id = $1
-    GROUP BY v.id, u.username, u.image, vc.name, vsc.name, orig.id, orig_u.id;
+    GROUP BY v.id, u.username, u.image, u.is_premium, vc.name, vsc.name, orig.id, orig_u.id;
     
      `;
       const data = await pool.query(query, [result.rows[0].id]);
@@ -342,6 +344,7 @@ export const getComments = async (req, res) => {
       u.id AS user_id,
       u.username AS username,
       u.image AS user_image,
+      u.is_premium AS premium,
       c.created_at AS created_at,
       c.updated_at AS updated_at
     FROM fan_star_video_comment c
@@ -383,6 +386,7 @@ SELECT
   v.user_id,
   u.username,
   u.image AS user_image,
+  u.is_premium AS premium,
   v.created_at,
   v.shared_post_id,
   orig.name AS original_name,
@@ -402,7 +406,7 @@ LEFT JOIN fan_star_video_comment c ON v.id = c.video_id
 LEFT JOIN fan_star_video_like l ON v.id = l.video_id
 LEFT JOIN fan_star_videos orig ON v.shared_post_id = orig.id
 LEFT JOIN users orig_u ON orig.user_id = orig_u.id
-GROUP BY v.id, vc.name, vsc.name, u.username, u.image, orig.id, orig_u.id
+GROUP BY v.id, vc.name, vsc.name, u.username, u.image, u.is_premium, orig.id, orig_u.id
 ORDER BY comment_count DESC
 LIMIT 1;
     `;
@@ -514,7 +518,7 @@ LEFT JOIN fan_star_video_like l ON v.id = l.video_id
 LEFT JOIN fan_star_videos orig ON v.shared_post_id = orig.id
 LEFT JOIN users orig_u ON orig.user_id = orig_u.id
 WHERE v.sub_category_id = $1 AND v.status != 'blocked'
-GROUP BY v.id, u.username, u.image, orig.name, orig.description, orig.video, orig.thumbnail, orig_u.username, orig_u.image, orig.created_at
+GROUP BY v.id, u.username, u.image, u.is_premium, orig.name, orig.description, orig.video, orig.thumbnail, orig_u.username, orig_u.image, orig.created_at
 ORDER BY v.created_at DESC
 
       `;
@@ -623,6 +627,7 @@ SELECT
   v.shared_post_id,
   u.username,
   u.image AS user_image,
+  u.is_premium AS premium,
   v.created_at,
   orig.name AS original_name,
   orig.description AS original_description,
@@ -642,7 +647,7 @@ LEFT JOIN fan_star_video_like l ON v.id = l.video_id
 LEFT JOIN fan_star_videos orig ON v.shared_post_id = orig.id
 LEFT JOIN users orig_u ON orig.user_id = orig_u.id
 WHERE v.user_id = $1
-GROUP BY v.id, vc.name, vsc.name, u.username, u.image , vc.french_name, vsc.french_name, orig.id, orig_u.id
+GROUP BY v.id, vc.name, vsc.name, u.username, u.image , u.is_premium, vc.french_name, vsc.french_name, orig.id, orig_u.id
 ORDER BY v.created_at DESC
 LIMIT $2 OFFSET $3;
     `;
@@ -825,6 +830,7 @@ export const searchVideosByTitle = async (req, res) => {
         v.shared_post_id,
         u.username,
         u.image AS user_image,
+        u.is_premium AS premium,
         v.created_at,
         orig.name AS original_name,
         orig.description AS original_description,

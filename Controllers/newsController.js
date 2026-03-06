@@ -41,6 +41,7 @@ export const createNews = async (req, res) => {
         v.shared_post_id,
         u.username AS username,
         u.image AS userImage,
+        u.is_premium AS premium,
         orig.description AS original_description,
         orig.image AS original_image,
         orig_u.username AS original_username,
@@ -51,7 +52,7 @@ export const createNews = async (req, res) => {
       LEFT JOIN NEWS orig ON v.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.id = $1
-      GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;
+      GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id;
      `;
       const data = await pool.query(query, [result.rows[0].id]);
       const newsData = data.rows[0];
@@ -169,6 +170,7 @@ export const updateNews = async (req, res) => {
       v.shared_post_id,
       u.username AS username,
       u.image AS userImage,
+      u.is_premium AS premium,
       orig.description AS original_description,
       orig.image AS original_image,
       orig_u.username AS original_username,
@@ -179,7 +181,7 @@ export const updateNews = async (req, res) => {
     LEFT JOIN NEWS orig ON v.shared_post_id = orig.id
     LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.id = $1
-    GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;
+    GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id;
    `;
       const data = await pool.query(query, [id]);
       const newsData = data.rows[0];
@@ -269,6 +271,7 @@ export const sendComment = async (req, res) => {
       nc.user_id AS userId,
       u.username AS username,
       u.image AS userImage,
+      u.is_premium AS premium,
       n.shared_post_id,
       orig.description AS original_description,
       orig.image AS original_image,
@@ -281,6 +284,7 @@ export const sendComment = async (req, res) => {
     LEFT JOIN NEWS orig ON n.shared_post_id = orig.id
     LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE nc.id=$1
+    GROUP BY nc.id, u.username, u.image, u.is_premium, n.shared_post_id, orig.id, orig_u.id
     ORDER BY nc.created_at DESC;
         `;
       const { rows } = await pool.query(commentQuery, [result.rows[0].id]);
@@ -329,6 +333,7 @@ export const getAllCommentsByNews = async (req, res) => {
         u.id AS userId,
         u.username AS username,
         u.image AS userImage,
+        u.is_premium AS premium,
         n.id AS news_id,
         n.description,
         n.category AS category_id,
@@ -464,6 +469,7 @@ export const getAllLikesByNews = async (req, res) => {
         l.*,
         u.username AS username,
         u.image AS userImage,
+        u.is_premium AS premium,
         n.description,
         n.category AS category_id,
         n.sub_category AS sub_category_id,
@@ -529,6 +535,7 @@ export const getSpecificNews = async (req, res) => {
     v.user_id,
     u.username AS username,
     u.image AS userImage,
+    u.is_premium AS premium,
     (
         SELECT COALESCE(json_agg(
             json_build_object(
@@ -569,7 +576,7 @@ JOIN users u ON v.user_id = u.id
 LEFT JOIN NEWS orig ON v.shared_post_id = orig.id
 LEFT JOIN users orig_u ON orig.user_id = orig_u.id
 WHERE v.id = $1 AND u.is_deleted=FALSE
-GROUP BY v.id, u.username, u.image, orig.id, orig_u.id;
+GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id;
 
  
  `;
@@ -615,6 +622,7 @@ export const getAllNews = async (req, res) => {
       v.shared_post_id,
       u.username AS username,
       u.image AS userImage,
+      u.is_premium AS premium,
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
@@ -631,7 +639,7 @@ export const getAllNews = async (req, res) => {
     LEFT JOIN NEWS orig ON v.shared_post_id = orig.id
     LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE u.is_deleted=FALSE
-    GROUP BY v.id, u.username, u.image, c.id, sc.id, orig.id, orig_u.id
+    GROUP BY v.id, u.username, u.image, u.is_premium, c.id, sc.id, orig.id, orig_u.id
     ORDER BY v.created_at DESC`;
 
     if (req.query.page !== undefined && req.query.limit !== undefined) {
@@ -735,6 +743,7 @@ export const getAllNewsByUser = async (req, res) => {
       v.user_id,
       u.username AS username,
       u.image AS userImage,
+      u.is_premium AS premium,
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
@@ -752,7 +761,7 @@ export const getAllNewsByUser = async (req, res) => {
     LEFT JOIN NEWS orig ON v.shared_post_id = orig.id
     LEFT JOIN users orig_u ON orig.user_id = orig_u.id
     WHERE v.user_id = $1 AND u.is_deleted=FALSE
-    GROUP BY v.id, u.username, u.image, c.id, sc.id, orig.id, orig_u.id
+    GROUP BY v.id, u.username, u.image, u.is_premium, c.id, sc.id, orig.id, orig_u.id
     ORDER BY v.created_at DESC
     LIMIT $2 OFFSET $3;`;
 
@@ -821,6 +830,7 @@ export const getAllNewsByCategory = async (req, res) => {
       v.shared_post_id,
       u.username AS username,
       u.image AS user_image,
+      u.is_premium AS premium,
       c.name AS category_name,
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
@@ -954,7 +964,7 @@ export const getTopNewsWithMostComments = async (req, res) => {
       LEFT JOIN like_NEWS l ON n.id = l.NEWS_id
       LEFT JOIN NEWS orig ON n.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
-      GROUP BY n.id, nc.name, nsc.name, u.username, u.image, orig.id, orig_u.id
+      GROUP BY n.id, nc.name, nsc.name, u.username, u.image, u.is_premium, orig.id, orig_u.id
       ORDER BY comment_count DESC
       LIMIT 1;
     `;
@@ -1019,6 +1029,7 @@ export const searchNews = async (req, res) => {
       v.shared_post_id,
       u.username AS username,
       u.image AS userImage,
+      u.is_premium AS premium,
       c.name AS category_name,
       sc.name AS sub_category_name,
       orig.description AS original_description,

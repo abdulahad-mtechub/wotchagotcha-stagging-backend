@@ -41,6 +41,7 @@ export const createPicTour = async (req, res) => {
           v.shared_post_id,
           u.username AS username,
           u.image AS userImage,
+          u.is_premium AS premium,
           orig.name AS original_name,
           orig.description AS original_description,
           orig.image AS original_image,
@@ -54,7 +55,7 @@ export const createPicTour = async (req, res) => {
         LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
         LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE v.id = $1
-        GROUP BY v.id, u.username, u.image, pc.name, psc.name, orig.id, orig_u.id`;
+        GROUP BY v.id, u.username, u.image, u.is_premium, pc.name, psc.name, orig.id, orig_u.id`;
 
       const data = await pool.query(query, [result.rows[0].id]);
 
@@ -204,6 +205,7 @@ export const updatePicTour = async (req, res) => {
           v.shared_post_id,
           u.username AS username,
           u.image AS userImage,
+          u.is_premium AS premium,
           orig.name AS original_name,
           orig.description AS original_description,
           orig.image AS original_image,
@@ -217,7 +219,7 @@ export const updatePicTour = async (req, res) => {
         LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
         LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE v.id = $1
-        GROUP BY v.id, u.username, u.image, pc.name, psc.name, orig.id, orig_u.id`;
+        GROUP BY v.id, u.username, u.image, u.is_premium, pc.name, psc.name, orig.id, orig_u.id`;
 
       const data = await pool.query(query, [result.rows[0].id]);
 
@@ -315,7 +317,8 @@ export const sendComment = async (req, res) => {
         v.comment AS comment,
         u.id AS userId,
         u.username AS username,
-        u.image AS userImage
+        u.image AS userImage,
+        u.is_premium AS premium
         FROM pic_comment v
         LEFT JOIN users u ON v.user_id = u.id
         WHERE v.id=$1
@@ -864,7 +867,7 @@ export const getAllPicToursByUser = async (req, res) => {
       LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.user_id = $1
-      GROUP BY v.id, u.username, u.image, pc.name, psc.name, pc.french_name, psc.french_name, orig.id, orig_u.id
+      GROUP BY v.id, u.username, u.image, u.is_premium, pc.name, psc.name, pc.french_name, psc.french_name, orig.id, orig_u.id
       ORDER BY v.created_at DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -944,7 +947,7 @@ export const getAllRecentToursByCategory = async (req, res) => {
       LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.pic_category = $3 AND u.is_deleted = FALSE
-      GROUP BY v.id, u.username, u.image, pc.name, psc.name, orig.id, orig_u.id
+      GROUP BY v.id, u.username, u.image, u.is_premium, pc.name, psc.name, orig.id, orig_u.id
       ORDER BY v.created_at DESC
       LIMIT $1 OFFSET $2;
     `;
@@ -1014,6 +1017,7 @@ export const getAllPicTourByCategory = async (req, res) => {
         v.shared_post_id,
         u.username AS username,
         u.image AS userImage,
+        u.is_premium AS premium,
         (
           SELECT COUNT(*) FROM pic_comment pc WHERE pc.pic_tours_id = v.id
         ) AS comment_count,
@@ -1034,6 +1038,7 @@ export const getAllPicTourByCategory = async (req, res) => {
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE (v.pic_category = $1 OR (v.shared_post_id IS NOT NULL AND orig.pic_category = $1)) 
         AND u.is_deleted = FALSE AND v.status != 'blocked'
+      GROUP BY v.id, u.username, u.image, u.is_premium, psc.name, psc."index", psc.french_name, orig.id, orig_u.id
       ORDER BY v.created_at DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -1069,6 +1074,7 @@ export const getAllPicTourByCategory = async (req, res) => {
         user_id: row.user_id,
         username: row.username,
         user_image: row.userImage,
+        premium: row.premium,
         created_at: row.tour_created_at,
         comment_count: row.comment_count,
         total_likes: row.total_likes,
@@ -1155,7 +1161,7 @@ export const getMostViewedToursByCategory = async (req, res) => {
       LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.pic_category = $1 AND u.is_deleted = FALSE
-      GROUP BY v.id, u.username, u.image, pc.name, psc.name, orig.id, orig_u.id
+      GROUP BY v.id, u.username, u.image, u.is_premium, pc.name, psc.name, orig.id, orig_u.id
       ORDER BY view_count DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -1237,7 +1243,7 @@ export const getAllTrendingToursByCategory = async (req, res) => {
       LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.pic_category = $1 AND u.is_deleted = FALSE
-      GROUP BY v.id, u.username, u.image, pc.name, psc.name, orig.id, orig_u.id
+      GROUP BY v.id, u.username, u.image, u.is_premium, pc.name, psc.name, orig.id, orig_u.id
       ORDER BY view_count DESC, v.created_at DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -1317,7 +1323,7 @@ export const getComentedTours = async (req, res) => {
       LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.pic_category = $1 AND u.is_deleted = FALSE
-      GROUP BY v.id, u.username, u.image, pc.name, psc.name, orig.id, orig_u.id
+      GROUP BY v.id, u.username, u.image, u.is_premium, pc.name, psc.name, orig.id, orig_u.id
       ORDER BY comment_count DESC
       LIMIT $2 OFFSET $3;
     `;
@@ -1417,6 +1423,7 @@ export const searchTour = async (req, res) => {
     v.shared_post_id,
     u.username AS username,
     u.image AS userImage,
+    u.is_premium AS premium,
     orig.name AS original_name,
     orig.description AS original_description,
     orig.image AS original_image,
@@ -1428,7 +1435,7 @@ export const searchTour = async (req, res) => {
         LEFT JOIN pic_tours orig ON v.shared_post_id = orig.id
         LEFT JOIN users orig_u ON orig.user_id = orig_u.id
         WHERE ${conditions.join(" OR ")} AND u.is_deleted=FALSE
-        GROUP BY v.id, u.username, u.image, orig.id, orig_u.id
+        GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id
         ORDER BY v.created_at DESC
         `;
 
