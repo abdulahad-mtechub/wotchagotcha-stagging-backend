@@ -288,6 +288,7 @@ export const sendComment = async (req, res) => {
       v.QAFI_id AS qafi_id,
       v.id AS commentId,
             v.comment AS comment,
+            v.created_at AS commentCreatedAt,
             u.id AS userId,
             u.username AS username,
             u.image AS userImage,

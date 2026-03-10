@@ -318,7 +318,7 @@ export const getComments = async (req, res) => {
       u.username AS username,
       u.image AS user_image,
       u.is_premium AS premium,
-      c.created_at AS created_at,
+      c.created_at AS commentCreatedAt,
       c.updated_at AS updated_at
     FROM sport_comment c
     JOIN users u ON c.user_id = u.id

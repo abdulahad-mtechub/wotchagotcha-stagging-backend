@@ -268,6 +268,7 @@ export const sendComment = async (req, res) => {
       nc.NEWS_id AS news_id,
       nc.id AS commentId,
       nc.comment AS comment,
+      nc.created_at AS commentCreatedAt,
       nc.user_id AS userId,
       u.username AS username,
       u.image AS userImage,

@@ -26,6 +26,7 @@ export const sendMondonComment = async (req, res) => {
       v.item_id AS item_id,
       v.id AS commentId,
             v.comment AS comment,
+            v.created_at AS commentCreatedAt,
             u.id AS userId,
             u.username AS username,
             u.image AS userImage
@@ -58,6 +59,7 @@ export const getAllCommentsByMondonMarket = async (req, res) => {
     const { id } = req.params; // id = item id
     let commentQuery = `SELECT v.id AS commentId,
       v.comment AS comment,
+      v.created_at AS commentCreatedAt,
       u.id AS userId,
       u.username AS username,
       u.image AS userImage

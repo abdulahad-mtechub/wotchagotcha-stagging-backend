@@ -386,6 +386,7 @@ export const sendComment = async (req, res) => {
       v.top_video_id AS top_video_id,
       v.id AS commentId,
             v.comment AS comment,
+            v.created_at AS commentCreatedAt,
             u.id AS userId,
             u.username AS username,
             u.image AS userImage,
@@ -429,6 +430,7 @@ export const getAllCommentsByVideo = async (req, res) => {
     if (type === "topvideo") {
       commentQuery = `SELECT v.id AS commentId,
       v.comment AS comment,
+      v.created_at AS commentCreatedAt,
       u.id AS userId,
       u.username AS username,
       u.image AS userImage
@@ -440,6 +442,7 @@ export const getAllCommentsByVideo = async (req, res) => {
     } else {
       commentQuery = `SELECT v.id AS commentId,
       v.comment AS comment,
+      v.created_at AS commentCreatedAt,
       u.id AS userId,
       u.username AS username,
       u.image AS userImage
