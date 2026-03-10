@@ -305,7 +305,7 @@ export const addComment = async (req, res) => {
     }
 
     const insertQuery =
-      "INSERT INTO cinematics_video_comment (video_id, user_id, comment) VALUES ($1, $2, $3) RETURNING *";
+      'INSERT INTO cinematics_video_comment (video_id, user_id, comment) VALUES ($1, $2, $3) RETURNING id, video_id, user_id, comment, created_at AS "commentCreatedAt", updated_at';
     const result = await pool.query(insertQuery, [video_id, user_id, comment]);
 
     if (result.rowCount === 1) {
@@ -344,7 +344,7 @@ export const getComments = async (req, res) => {
         u.username AS username,
         u.image AS user_image,
         u.is_premium AS premium,
-        c.created_at AS created_at,
+        c.created_at AS commentCreatedAt,
         c.updated_at AS updated_at
       FROM cinematics_video_comment c
       JOIN users u ON c.user_id = u.id

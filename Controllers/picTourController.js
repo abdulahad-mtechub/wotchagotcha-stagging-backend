@@ -315,6 +315,7 @@ export const sendComment = async (req, res) => {
       v.top_tours_id AS top_tours_id,
       v.id AS commentId,
         v.comment AS comment,
+        v.created_at AS commentCreatedAt,
         u.id AS userId,
         u.username AS username,
         u.image AS userImage,
@@ -354,6 +355,7 @@ export const getAllCommentsByPicTours = async (req, res) => {
     if (type === "toptour") {
       commentQuery = `SELECT v.id AS commentId,
       v.comment AS comment,
+      v.created_at AS commentCreatedAt,
       u.id AS userId,
       u.username AS username,
       u.image AS userImage
@@ -365,6 +367,7 @@ export const getAllCommentsByPicTours = async (req, res) => {
     } else {
       commentQuery = `SELECT v.id AS commentId,
       v.comment AS comment,
+      v.created_at AS commentCreatedAt,
       u.id AS userId,
       u.username AS username,
       u.image AS userImage

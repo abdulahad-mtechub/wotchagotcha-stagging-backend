@@ -382,7 +382,20 @@ export const resetPassword = async (req, res, next) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { id, username } = req.body;
+    const {
+      id,
+      username,
+      hide_email,
+      hide_location,
+      hide_profession,
+      bio,
+      city,
+      state,
+      province,
+      region,
+      profession,
+      image
+    } = req.body;
     const existingUserResult = await getSingleRow("users", {
       column: "id",
       value: id,
@@ -394,8 +407,21 @@ export const updateProfile = async (req, res) => {
         .json({ statusCode: 404, message: "User not found" });
     }
     const insertUserQuery =
-      "UPDATE users SET username=$1 WHERE id=$2 RETURNING *";
-    const newUserResult = await pool.query(insertUserQuery, [username, id]);
+      "UPDATE users SET username=$1, hide_email=$2, hide_location=$3, hide_profession=$4, bio=$5, city=$6, state=$7, province=$8, region=$9, profession=$10, image=$11 WHERE id=$12 RETURNING *";
+    const newUserResult = await pool.query(insertUserQuery, [
+      username || existingUserResult[0].username,
+      hide_email !== undefined ? hide_email : existingUserResult[0].hide_email,
+      hide_location !== undefined ? hide_location : existingUserResult[0].hide_location,
+      hide_profession !== undefined ? hide_profession : existingUserResult[0].hide_profession,
+      bio !== undefined ? bio : existingUserResult[0].bio,
+      city !== undefined ? city : existingUserResult[0].city,
+      state !== undefined ? state : existingUserResult[0].state,
+      province !== undefined ? province : existingUserResult[0].province,
+      region !== undefined ? region : existingUserResult[0].region,
+      profession !== undefined ? profession : existingUserResult[0].profession,
+      image !== undefined ? image : existingUserResult[0].image,
+      id
+    ]);
     res.status(200).json({
       statusCode: 200,
       newUser: {
@@ -408,6 +434,15 @@ export const updateProfile = async (req, res) => {
         banner_subscript_key: newUserResult.rows[0].banner_subscript_key,
         premium_subscription_key: newUserResult.rows[0].premium_subscription_key,
         is_premium: newUserResult.rows[0].is_premium,
+        hide_email: newUserResult.rows[0].hide_email,
+        hide_location: newUserResult.rows[0].hide_location,
+        hide_profession: newUserResult.rows[0].hide_profession,
+        bio: newUserResult.rows[0].bio,
+        city: newUserResult.rows[0].city,
+        state: newUserResult.rows[0].state,
+        province: newUserResult.rows[0].province,
+        region: newUserResult.rows[0].region,
+        profession: newUserResult.rows[0].profession,
         created_at: newUserResult.rows[0].created_at,
         updated_at: newUserResult.rows[0].updated_at,
       },
@@ -435,28 +470,99 @@ export const getSpecificUser = async (req, res) => {
         .status(401)
         .json({ statusCode: 401, message: "User not found" });
     }
+
+    const likesQuery = `SELECT COUNT(*) FROM user_profile_likes WHERE liked_user_id=$1`;
+    const likesResult = await pool.query(likesQuery, [id]);
+    const total_likes = parseInt(likesResult.rows[0].count) || 0;
+
+    // Mask fields based on privacy settings
+    let email = rows[0].email;
+    let city = rows[0].city;
+    let country = rows[0].country;
+    let province = rows[0].province;
+    let profession = rows[0].profession;
+    let state = rows[0].state;
+    let region = rows[0].region;
+    let bio = rows[0].bio;
+
+    if (rows[0].hide_email) email = null;
+    if (rows[0].hide_location) {
+      city = null; country = null; province = null; state = null; region = null;
+    }
+    if (rows[0].hide_profession) profession = null;
     res.status(200).json({
       statusCode: 200,
       user: {
         id: rows[0].id,
         role: rows[0].role,
         username: rows[0].username,
-        email: rows[0].email,
+        email: email,
         block: rows[0].block,
         image: rows[0].image,
-        city: rows[0].city,
-        country: rows[0].country,
-        province: rows[0].province,
-        profession: rows[0].profession,
-        state: rows[0].state,
-        region: rows[0].region,
+        city: city,
+        country: country,
+        province: province,
+        profession: profession,
+        state: state,
+        region: region,
         banner_subscript_key: rows[0].banner_subscript_key,
         premium_subscription_key: rows[0].premium_subscription_key,
         is_premium: rows[0].is_premium,
+        hide_email: rows[0].hide_email,
+        hide_location: rows[0].hide_location,
+        hide_profession: rows[0].hide_profession,
+        bio: bio,
+        total_likes: total_likes,
         created_at: rows[0].created_at,
         updated_at: rows[0].updated_at,
       },
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ statusCode: 500, message: "Internal server error" });
+  }
+};
+
+export const likeUserProfile = async (req, res) => {
+  try {
+    const { liked_user_id, liked_by_user_id } = req.body;
+
+    if (!liked_user_id || !liked_by_user_id) {
+      return res.status(400).json({ statusCode: 400, message: "liked_user_id and liked_by_user_id are required" });
+    }
+
+    if (liked_user_id === liked_by_user_id) {
+      return res.status(400).json({ statusCode: 400, message: "You cannot like your own profile" });
+    }
+
+    // Check if like already exists
+    const checkQuery = "SELECT * FROM user_profile_likes WHERE liked_user_id = $1 AND liked_by_user_id = $2";
+    const { rows } = await pool.query(checkQuery, [liked_user_id, liked_by_user_id]);
+
+    if (rows.length > 0) {
+      // Unlike
+      const deleteQuery = "DELETE FROM user_profile_likes WHERE liked_user_id = $1 AND liked_by_user_id = $2";
+      await pool.query(deleteQuery, [liked_user_id, liked_by_user_id]);
+      return res.status(200).json({ statusCode: 200, message: "Profile unliked successfully", liked: false });
+    } else {
+      // Like
+      const insertQuery = "INSERT INTO user_profile_likes (liked_user_id, liked_by_user_id) VALUES ($1, $2)";
+      await pool.query(insertQuery, [liked_user_id, liked_by_user_id]);
+      return res.status(200).json({ statusCode: 200, message: "Profile liked successfully", liked: true });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ statusCode: 500, message: "Internal server error", error: error.message });
+  }
+};
+
+export const getProfileLikesCount = async (req, res) => {
+  try {
+    const { user_id } = req.params;
+    const query = "SELECT COUNT(*) FROM user_profile_likes WHERE liked_user_id = $1";
+    const { rows } = await pool.query(query, [user_id]);
+    const count = parseInt(rows[0].count) || 0;
+    res.status(200).json({ statusCode: 200, count });
   } catch (error) {
     console.error(error);
     res.status(500).json({ statusCode: 500, message: "Internal server error" });
