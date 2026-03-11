@@ -569,6 +569,24 @@ export const getProfileLikesCount = async (req, res) => {
   }
 };
 
+export const getUsersWhoLikedProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const query = `
+      SELECT u.id, u.username, u.image, u.profession, upl.created_at as liked_at
+      FROM user_profile_likes upl
+      JOIN users u ON upl.liked_by_user_id = u.id
+      WHERE upl.liked_user_id = $1
+      ORDER BY upl.created_at DESC
+    `;
+    const { rows } = await pool.query(query, [id]);
+    res.status(200).json({ statusCode: 200, total_likes: rows.length, users: rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ statusCode: 500, message: "Internal server error" });
+  }
+};
+
 export const getAllUsers = async (req, res) => {
   try {
     console.log(req.query);

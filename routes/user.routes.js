@@ -31,6 +31,7 @@ import {
   verifyOtp,
   likeUserProfile,
   getProfileLikesCount,
+  getUsersWhoLikedProfile,
 } from "../Controllers/userController.js";
 import { upload } from "../utils/ImageHandler.js";
 import { verification } from "../Middleware/Verification.js";
@@ -50,6 +51,7 @@ userRoute.post("/validate_reset_password_link", ResetPasswordLinkValidate);
 userRoute.post("/updateUserProfile", updateProfile);
 userRoute.post("/likeUserProfile", likeUserProfile);
 userRoute.get("/getProfileLikesCount/:user_id", getProfileLikesCount);
+userRoute.get("/getProfileLikes/:id", getUsersWhoLikedProfile);
 userRoute.get("/getUser/:id", getSpecificUser);
 userRoute.get("/getAllUsers", getAllUsers);
 userRoute.get("/getAllUsersByYear", countUsersByMonth);
