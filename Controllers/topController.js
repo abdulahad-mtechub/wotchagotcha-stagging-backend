@@ -1877,7 +1877,9 @@ export const setTopItem = async (req, res) => {
               'id', ii.id,
               'image', ii.image
             )
-          ), ARRAY[]::JSONB[]) AS images
+          ), ARRAY[]::JSONB[]) AS images,
+          item.country,
+          item.country_code
         FROM item
         LEFT JOIN item_images ii ON item.id = ii.item_id
         LEFT JOIN users u ON item.user_id = u.id
@@ -1896,7 +1898,9 @@ export const setTopItem = async (req, res) => {
           item.paid_status,
           u.username,
           u.image,
-          ic.name
+          ic.name,
+          item.country,
+          item.country_code
       `;
       const getData = await pool.query(getQuery, [item_id]);
 
@@ -2018,7 +2022,9 @@ export const getAllTopItem = async (req, res) => {
             'id', ii.id,
             'image', ii.image
           )
-        ), ARRAY[]::JSONB[]) AS images
+        ), ARRAY[]::JSONB[]) AS images,
+        item.country,
+        item.country_code
       FROM item
       LEFT JOIN item_images ii ON item.id = ii.item_id
       LEFT JOIN users u ON item.user_id = u.id
@@ -2037,7 +2043,9 @@ export const getAllTopItem = async (req, res) => {
         item.paid_status,
         u.username,
         u.image,
-        ic.name
+        ic.name,
+        item.country,
+        item.country_code
         ORDER BY item.top_added_date DESC
     `;
     if (req.query.page === undefined && req.query.limit === undefined) {
