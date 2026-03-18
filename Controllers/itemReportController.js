@@ -7,24 +7,54 @@ export const createItemReport = async (req, res) => {
     try {
         const { module_type, item_id, reporter_user_id, reported_user_id, reason } = req.body;
 
-        if (!module_type || !item_id || !reporter_user_id || !reported_user_id || !reason) {
+        if (!module_type || !item_id || !reporter_user_id || !reason) {
             return res.status(400).json({
                 statusCode: 400,
-                message: "Missing required fields: module_type, item_id, reporter_user_id, reported_user_id, reason",
+                message: "Missing required fields: module_type, item_id, reporter_user_id, reason",
             });
         }
 
         const rid = parseInt(reporter_user_id);
-        const uid = parseInt(reported_user_id);
         const iid = parseInt(item_id);
 
-        if (isNaN(rid) || isNaN(uid) || isNaN(iid)) {
-            return res.status(400).json({ statusCode: 400, message: "item_id, reporter_user_id and reported_user_id must be valid integers" });
+        if (isNaN(rid) || isNaN(iid)) {
+            return res.status(400).json({ statusCode: 400, message: "item_id and reporter_user_id must be valid integers" });
         }
 
-        // Prevent self-reporting
+        // 1. Check if the reporter exists
+        const reporterCheck = await pool.query("SELECT id FROM users WHERE id = $1 AND is_deleted = FALSE", [rid]);
+        if (reporterCheck.rowCount === 0) {
+            return res.status(404).json({ statusCode: 404, message: "Reporter user (you) not found or deleted" });
+        }
+
+        // 2. Validate module_type and fetch the item (to get the owner/reported_user_id)
+        if (!ALLOWED_MODULE_TABLES.has(module_type)) {
+            return res.status(400).json({ statusCode: 400, message: `Invalid module_type: ${module_type}` });
+        }
+
+        const itemQuery = `SELECT * FROM ${module_type} WHERE id = $1`;
+        const itemResult = await pool.query(itemQuery, [iid]);
+
+        if (itemResult.rowCount === 0) {
+            return res.status(404).json({ statusCode: 404, message: `Item not found in ${module_type}` });
+        }
+
+        // Fetch owner from item, or use body fallback if item table doesn't have user_id
+        let uid = itemResult.rows[0].user_id || parseInt(reported_user_id);
+
+        if (!uid || isNaN(uid)) {
+            return res.status(400).json({ statusCode: 400, message: "Could not determine the reported user (owner) for this item." });
+        }
+
+        // 3. Prevent self-reporting
         if (rid === uid) {
-            return res.status(400).json({ statusCode: 400, message: "You cannot report yourself" });
+            return res.status(400).json({ statusCode: 400, message: "You cannot report your own item" });
+        }
+
+        // 4. Check if the reported user exists
+        const reportedCheck = await pool.query("SELECT id FROM users WHERE id = $1 AND is_deleted = FALSE", [uid]);
+        if (reportedCheck.rowCount === 0) {
+            return res.status(404).json({ statusCode: 404, message: "The owner of this item no longer exists" });
         }
 
         const insert = `
@@ -168,6 +198,11 @@ const ALLOWED_MODULE_TABLES = new Set([
     "GEBC",
     "item",
     "sports",
+    "top_video",
+    "top_tours",
+    "top_QAFI",
+    "top_GEBC",
+    "top_NEWS",
 ]);
 
 // ─── Admin: Update report status (take action) ────────────────────────────────

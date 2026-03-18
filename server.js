@@ -1,4 +1,5 @@
 import express from "express";
+import http from "http";
 import pkg from "body-parser";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -95,6 +96,8 @@ import indexRoute from "./routes/index.routes.js";
 import reportedUserRoute from "./routes/reportedUser.routes.js";
 import itemReportRoute from "./routes/itemReport.routes.js";
 import followerRoute from "./routes/follower.routes.js";
+import chatRoute from "./routes/chat.routes.js";
+import setupMessagingSocket from "./Sockets/messaging.socket.js";
 
 import cron from "node-cron";
 
@@ -213,6 +216,7 @@ app.use("/index", indexRoute);
 app.use("/reported_user", reportedUserRoute);
 app.use("/itemReport", itemReportRoute);
 app.use("/follower", followerRoute);
+app.use("/api/v1/chat", chatRoute);
 app.use("/test", (req, res) => {
   res.send("hello");
 });
@@ -232,6 +236,11 @@ cron.schedule("0 0 * * *", () => {
   updateBannerStatus();
 });
 
-app.listen(port, () => {
+const server = http.createServer(app);
+
+// Initialize messaging socket
+setupMessagingSocket(server, dbConfig);
+
+server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
