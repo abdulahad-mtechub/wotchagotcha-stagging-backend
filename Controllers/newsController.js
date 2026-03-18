@@ -3,7 +3,7 @@ import { getAllRows, getSingleRow } from "../queries/common.js";
 import { handle_delete_photos_from_folder } from "../utils/handleDeletePhoto.js";
 export const createNews = async (req, res) => {
   try {
-    const { description, category, sub_category, user_id, image, shared_post_id } = req.body;
+    const { name, description, category, sub_category, user_id, image, shared_post_id } = req.body;
 
 
     // Check if the user exists
@@ -19,8 +19,9 @@ export const createNews = async (req, res) => {
     }
 
     const createQuery =
-      "INSERT INTO NEWS (description, category, sub_category, image, user_id, shared_post_id) VALUES($1, $2, $3, $4, $5, $6) RETURNING *";
+      "INSERT INTO NEWS (name, description, category, sub_category, image, user_id, shared_post_id) VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *";
     const result = await pool.query(createQuery, [
+      name || "",
       description || "",
       category,
       sub_category,
@@ -32,6 +33,7 @@ export const createNews = async (req, res) => {
     if (result.rowCount === 1) {
       const query = `SELECT
         v.id AS NEWS_id,
+        v.name,
         v.description,
         v.category,
         v.sub_category,
@@ -42,6 +44,7 @@ export const createNews = async (req, res) => {
         u.username AS username,
         u.image AS userImage,
         u.is_premium AS premium,
+        orig.name AS original_name,
         orig.description AS original_description,
         orig.image AS original_image,
         orig_u.username AS original_username,
@@ -53,12 +56,13 @@ export const createNews = async (req, res) => {
       LEFT JOIN users orig_u ON orig.user_id = orig_u.id
       WHERE v.id = $1
       GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id;
-     `;
+      `;
       const data = await pool.query(query, [result.rows[0].id]);
       const newsData = data.rows[0];
       if (newsData.shared_post_id) {
         newsData.original_post = {
           id: newsData.shared_post_id,
+          name: newsData.original_name,
           description: newsData.original_description,
           image: newsData.original_image,
           username: newsData.original_username,
@@ -127,7 +131,7 @@ export const deleteNews = async (req, res) => {
 };
 export const updateNews = async (req, res) => {
   try {
-    const { id, description, category, sub_category, image } = req.body;
+    const { id, name, description, category, sub_category, image } = req.body;
     const condition = {
       column: "id",
       value: id,
@@ -150,8 +154,9 @@ export const updateNews = async (req, res) => {
       handle_delete_photos_from_folder([imageSplit], "fileUpload");
     }
 
-    const updateType = `UPDATE NEWS SET description=$1, category=$2, sub_category=$3, image=$4, "updated_at"=NOW() WHERE id=$5 RETURNING *`;
+    const updateType = `UPDATE NEWS SET name=$1, description=$2, category=$3, sub_category=$4, image=$5, "updated_at"=NOW() WHERE id=$6 RETURNING *`;
     const result = await pool.query(updateType, [
+      name,
       description,
       category,
       sub_category,
@@ -161,6 +166,7 @@ export const updateNews = async (req, res) => {
     if (result.rowCount === 1) {
       const query = `SELECT
       v.id AS NEWS_id,
+      v.name,
       v.description,
       v.category,
       v.sub_category,
@@ -171,6 +177,7 @@ export const updateNews = async (req, res) => {
       u.username AS username,
       u.image AS userImage,
       u.is_premium AS premium,
+      orig.name AS original_name,
       orig.description AS original_description,
       orig.image AS original_image,
       orig_u.username AS original_username,
@@ -188,6 +195,7 @@ export const updateNews = async (req, res) => {
       if (newsData.shared_post_id) {
         newsData.original_post = {
           id: newsData.shared_post_id,
+          name: newsData.original_name,
           description: newsData.original_description,
           image: newsData.original_image,
           username: newsData.original_username,
@@ -274,6 +282,7 @@ export const sendComment = async (req, res) => {
       u.image AS userImage,
       u.is_premium AS premium,
       n.shared_post_id,
+      orig.name AS original_name,
       orig.description AS original_description,
       orig.image AS original_image,
       orig_u.username AS original_username,
@@ -293,6 +302,7 @@ export const sendComment = async (req, res) => {
       if (commentData && commentData.shared_post_id) {
         commentData.original_post = {
           id: commentData.shared_post_id,
+          name: commentData.original_name,
           description: commentData.original_description,
           image: commentData.original_image,
           username: commentData.original_username,
@@ -336,6 +346,7 @@ export const getAllCommentsByNews = async (req, res) => {
         u.image AS userImage,
         u.is_premium AS premium,
         n.id AS news_id,
+        n.name,
         n.description,
         n.category AS category_id,
         n.sub_category AS sub_category_id,
@@ -344,6 +355,7 @@ export const getAllCommentsByNews = async (req, res) => {
         c.name AS category_name,
         sc.name AS sub_category_name,
         n.shared_post_id,
+        orig.name AS original_name,
         orig.description AS original_description,
         orig.image AS original_image,
         orig_u.username AS original_username,
@@ -365,6 +377,7 @@ export const getAllCommentsByNews = async (req, res) => {
       if (row.shared_post_id) {
         row.original_post = {
           id: row.shared_post_id,
+          name: row.original_name,
           description: row.original_description,
           image: row.original_image,
           username: row.original_username,
@@ -471,6 +484,7 @@ export const getAllLikesByNews = async (req, res) => {
         u.username AS username,
         u.image AS userImage,
         u.is_premium AS premium,
+        n.name,
         n.description,
         n.category AS category_id,
         n.sub_category AS sub_category_id,
@@ -479,6 +493,7 @@ export const getAllLikesByNews = async (req, res) => {
         c.name AS category_name,
         sc.name AS sub_category_name,
         n.shared_post_id,
+        orig.name AS original_name,
         orig.description AS original_description,
         orig.image AS original_image,
         orig_u.username AS original_username,
@@ -500,6 +515,7 @@ export const getAllLikesByNews = async (req, res) => {
       if (row.shared_post_id) {
         row.original_post = {
           id: row.shared_post_id,
+          name: row.original_name,
           description: row.original_description,
           image: row.original_image,
           username: row.original_username,
@@ -529,6 +545,7 @@ export const getSpecificNews = async (req, res) => {
     const { id } = req.params;
     const query = `SELECT
     v.id AS News_id,
+    v.name,
     v.description,
     v.disc_category,
     v.image,
@@ -567,6 +584,7 @@ export const getSpecificNews = async (req, res) => {
         WHERE lv.NEWS_id = v.id
     ) AS likes,
         v.shared_post_id,
+        orig.name AS original_name,
         orig.description AS original_description,
         orig.image AS original_image,
         orig_u.username AS original_username,
@@ -588,6 +606,7 @@ GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id;
       if (newsData.shared_post_id) {
         newsData.original_post = {
           id: newsData.shared_post_id,
+          name: newsData.original_name,
           description: newsData.original_description,
           image: newsData.original_image,
           username: newsData.original_username,
@@ -614,6 +633,7 @@ export const getAllNews = async (req, res) => {
 
     let getQuery = `SELECT
       v.id AS NEWS_id,
+      v.name,
       v.description,
       v.category AS category_id,
       v.sub_category AS sub_category_id,
@@ -628,6 +648,7 @@ export const getAllNews = async (req, res) => {
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
       sc.french_name AS sub_category_french_name,
+      orig.name AS original_name,
       orig.description AS original_description,
       orig.image AS original_image,
       orig_u.username AS original_username,
@@ -664,6 +685,7 @@ export const getAllNews = async (req, res) => {
           if (row.shared_post_id) {
             row.original_post = {
               id: row.shared_post_id,
+              name: row.original_name,
               description: row.original_description,
               image: row.original_image,
               username: row.original_username,
@@ -692,6 +714,7 @@ export const getAllNews = async (req, res) => {
           if (row.shared_post_id) {
             row.original_post = {
               id: row.shared_post_id,
+              name: row.original_name,
               description: row.original_description,
               image: row.original_image,
               username: row.original_username,
@@ -736,6 +759,7 @@ export const getAllNewsByUser = async (req, res) => {
 
     const query = `SELECT
       v.id AS NEWS_id,
+      v.name,
       v.description,
       v.category AS category_id,
       v.sub_category AS sub_category_id,
@@ -750,6 +774,7 @@ export const getAllNewsByUser = async (req, res) => {
       c.french_name AS category_french_name,
       sc.french_name AS sub_category_french_name,
       v.shared_post_id,
+      orig.name AS original_name,
       orig.description AS original_description,
       orig.image AS original_image,
       orig_u.username AS original_username,
@@ -817,6 +842,7 @@ export const getAllNewsByCategory = async (req, res) => {
     // Get news in the given category with pagination
     const query = `SELECT
       v.id AS news_id,
+      v.name,
       v.description,
       v.category AS category_id,
       v.sub_category AS sub_category_id,
@@ -839,6 +865,7 @@ export const getAllNewsByCategory = async (req, res) => {
       (SELECT COUNT(*) FROM NEWS_comment WHERE NEWS_comment.NEWS_id = v.id) AS comment_count,
       (SELECT COUNT(*) FROM like_NEWS WHERE like_NEWS.NEWS_id = v.id) AS total_likes,
       -- Original post details
+      orig.name AS original_name,
       orig.description AS original_description,
       orig.image AS original_image,
       orig.sub_category AS original_sub_category_id,
@@ -886,7 +913,7 @@ export const getAllNewsByCategory = async (req, res) => {
 
       acc[subCategoryId].news_result.News.push({
         news_id: news.news_id,
-        name: news.category_name,
+        name: news.name,
         description: news.description,
         image: news.image,
         user_id: news.user_id,
@@ -899,6 +926,7 @@ export const getAllNewsByCategory = async (req, res) => {
         original_post: news.shared_post_id
           ? {
             id: news.shared_post_id,
+            name: news.original_name,
             description: news.original_description,
             image: news.original_image,
             username: news.original_username,
@@ -941,6 +969,7 @@ export const getTopNewsWithMostComments = async (req, res) => {
     const query = `
       SELECT
         n.id AS news_id,
+        n.name,
         n.description,
         n.image,
         nc.name AS category_name,
@@ -950,6 +979,7 @@ export const getTopNewsWithMostComments = async (req, res) => {
         u.image AS user_image,
         n.created_at,
         n.shared_post_id,
+        orig.name AS original_name,
         orig.description AS original_description,
         orig.image AS original_image,
         orig_u.username AS original_username,
@@ -982,6 +1012,7 @@ export const getTopNewsWithMostComments = async (req, res) => {
     if (topNews.shared_post_id) {
       topNews.original_post = {
         id: topNews.shared_post_id,
+        name: topNews.original_name,
         description: topNews.original_description,
         image: topNews.original_image,
         username: topNews.original_username,
@@ -1021,6 +1052,7 @@ export const searchNews = async (req, res) => {
 
     const query = `SELECT
       v.id AS NEWS_id,
+      v.name,
       v.description,
       v.category AS category_id,
       v.sub_category AS sub_category_id,
@@ -1033,6 +1065,7 @@ export const searchNews = async (req, res) => {
       u.is_premium AS premium,
       c.name AS category_name,
       sc.name AS sub_category_name,
+      orig.name AS original_name,
       orig.description AS original_description,
       orig.image AS original_image,
       orig_u.username AS original_username,

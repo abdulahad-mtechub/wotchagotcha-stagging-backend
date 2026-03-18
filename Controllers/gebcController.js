@@ -3,7 +3,7 @@ import { getAllRows, getSingleRow } from "../queries/common.js";
 import { handle_delete_photos_from_folder } from "../utils/handleDeletePhoto.js";
 export const createGEBC = async (req, res) => {
   try {
-    const { description, category, category_id, main_category_id, sub_category, sub_category_id, user_id, image, shared_post_id } = req.body;
+    const { name, description, category, category_id, main_category_id, sub_category, sub_category_id, user_id, image, shared_post_id } = req.body;
     const categoryVal = category_id || category || main_category_id || null;
     const subCategoryVal = sub_category_id || sub_category || null;
 
@@ -21,8 +21,9 @@ export const createGEBC = async (req, res) => {
 
 
     const createQuery =
-      "INSERT INTO GEBC (description, category, sub_category, image, user_id, shared_post_id) VALUES($1, $2, $3, $4, $5, $6) RETURNING *";
+      "INSERT INTO GEBC (name, description, category, sub_category, image, user_id, shared_post_id) VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *";
     const result = await pool.query(createQuery, [
+      name || "",
       description || "",
       categoryVal,
       subCategoryVal,
@@ -60,6 +61,7 @@ export const createGEBC = async (req, res) => {
       if (gebcData.shared_post_id) {
         gebcData.original_post = {
           id: gebcData.shared_post_id,
+          name: gebcData.original_name,
           description: gebcData.original_description,
           image: gebcData.original_image,
           username: gebcData.original_username,
@@ -130,7 +132,7 @@ export const deleteGEBC = async (req, res) => {
 };
 export const updateGEBC = async (req, res) => {
   try {
-    const { id, description, category, sub_category, image } = req.body;
+    const { id, name, description, category, sub_category, image } = req.body;
     const condition = {
       column: "id",
       value: id,
@@ -178,8 +180,9 @@ export const updateGEBC = async (req, res) => {
       handle_delete_photos_from_folder([imageSplit], "fileUpload");
     }
 
-    const updateType = `UPDATE GEBC SET description=$1, category=$2, sub_category=$3, image=$4, "updated_at"=NOW() WHERE id=$5 RETURNING *`;
+    const updateType = `UPDATE GEBC SET name=$1, description=$2, category=$3, sub_category=$4, image=$5, "updated_at"=NOW() WHERE id=$6 RETURNING *`;
     const result = await pool.query(updateType, [
+      name,
       description,
       category,
       sub_category,
@@ -215,6 +218,7 @@ export const updateGEBC = async (req, res) => {
       if (gebcData.shared_post_id) {
         gebcData.original_post = {
           id: gebcData.shared_post_id,
+          name: gebcData.original_name,
           description: gebcData.original_description,
           image: gebcData.original_image,
           username: gebcData.original_username,
@@ -339,6 +343,7 @@ export const getAllCommentsByGEBC = async (req, res) => {
         u.image AS userImage,
         u.is_premium AS premium,
         g.id AS gebc_id,
+        g.name,
         g.description,
         g.category AS category_id,
         g.sub_category AS sub_category_id,
@@ -460,57 +465,59 @@ export const getAllLikesByGBEC = async (req, res) => {
 export const getSpecificGEBC = async (req, res) => {
   try {
     const { id } = req.params;
-    const query = `SELECT
-    v.id AS gebc_id,
-    v.description,
-    v.category,
-    v.image,
-    v.created_at AS tour_created_at,
-    v.user_id,
-    v.shared_post_id,
-    u.username AS username,
-    u.image AS userImage,
-    u.is_premium AS premium,
-    (
-        SELECT COALESCE(json_agg(
-            json_build_object(
-                'comment_id', c.id,
-                'comment', c.comment,
-                'user_id', c.user_id,
-                'username', cu.username,
-                'userimage', cu.image,
-                'comment_created_at', c.created_at
-            )
-        ), '[]'::json)
-        FROM GEBC_comment c
-        JOIN users cu ON c.user_id = cu.id
-        WHERE c.GEBC_id = v.id
-    ) AS comments,
-    (
-        SELECT COALESCE(json_agg(
-            json_build_object(
-                'id', lv.id,
-                'user_id', lv.user_id,
-                'GEBC_id', v.id,
-                'created_at', lu.created_at,
-                'updated_at', lu.updated_at
-            )
-        ), '[]'::json)
-        FROM like_GEBC lv
-        JOIN users lu ON lv.user_id = lu.id
-        WHERE lv.GEBC_id = v.id
-    ) AS likes,
-    orig.description AS original_description,
-    orig.image AS original_image,
-    orig_u.username AS original_username,
-    orig_u.image AS original_user_image,
-    orig.created_at AS original_created_at
-FROM GEBC v
-JOIN users u ON v.user_id = u.id
-LEFT JOIN GEBC orig ON v.shared_post_id = orig.id
-LEFT JOIN users orig_u ON orig.user_id = orig_u.id
-WHERE v.id = $1 AND u.is_deleted=FALSE
-GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id;
+      const query = `SELECT
+        v.id AS gebc_id,
+        v.name,
+        v.description,
+        v.category,
+        v.image,
+        v.created_at AS tour_created_at,
+        v.user_id,
+        v.shared_post_id,
+        u.username AS username,
+        u.image AS userImage,
+        u.is_premium AS premium,
+        (
+            SELECT COALESCE(json_agg(
+                json_build_object(
+                    'comment_id', c.id,
+                    'comment', c.comment,
+                    'user_id', c.user_id,
+                    'username', cu.username,
+                    'userimage', cu.image,
+                    'comment_created_at', c.created_at
+                )
+            ), '[]'::json)
+            FROM GEBC_comment c
+            JOIN users cu ON c.user_id = cu.id
+            WHERE c.GEBC_id = v.id
+        ) AS comments,
+        (
+            SELECT COALESCE(json_agg(
+                json_build_object(
+                    'id', lv.id,
+                    'user_id', lv.user_id,
+                    'GEBC_id', v.id,
+                    'created_at', lu.created_at,
+                    'updated_at', lu.updated_at
+                )
+            ), '[]'::json)
+            FROM like_GEBC lv
+            JOIN users lu ON lv.user_id = lu.id
+            WHERE lv.GEBC_id = v.id
+        ) AS likes,
+        orig.name AS original_name,
+        orig.description AS original_description,
+        orig.image AS original_image,
+        orig_u.username AS original_username,
+        orig_u.image AS original_user_image,
+        orig.created_at AS original_created_at
+    FROM GEBC v
+    JOIN users u ON v.user_id = u.id
+    LEFT JOIN GEBC orig ON v.shared_post_id = orig.id
+    LEFT JOIN users orig_u ON orig.user_id = orig_u.id
+    WHERE v.id = $1 AND u.is_deleted=FALSE
+    GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id;
  `;
 
     const { rows } = await pool.query(query, [id]);
@@ -519,6 +526,7 @@ GROUP BY v.id, u.username, u.image, u.is_premium, orig.id, orig_u.id;
       if (gebcData.shared_post_id) {
         gebcData.original_post = {
           id: gebcData.shared_post_id,
+          name: gebcData.original_name,
           description: gebcData.original_description,
           image: gebcData.original_image,
           username: gebcData.original_username,
@@ -545,6 +553,7 @@ export const getAllGEBCs = async (req, res) => {
 
     let getQuery = `SELECT
       v.id AS gebc_id,
+      v.name,
       v.description,
       v.category AS category_id,
       v.sub_category AS sub_category_id,
@@ -559,6 +568,7 @@ export const getAllGEBCs = async (req, res) => {
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
       sc.french_name AS sub_category_french_name,
+      orig.name AS original_name,
       orig.description AS original_description,
       orig.image AS original_image,
       orig_u.username AS original_username,
@@ -589,6 +599,7 @@ export const getAllGEBCs = async (req, res) => {
       if (row.shared_post_id) {
         row.original_post = {
           id: row.shared_post_id,
+          name: row.original_name,
           description: row.original_description,
           image: row.original_image,
           username: row.original_username,
@@ -672,6 +683,7 @@ export const getAllGEBCByUser = async (req, res) => {
 
     const query = `SELECT
       v.id AS gebc_id,
+      v.name,
       v.description,
       v.category AS category_id,
       v.sub_category AS sub_category_id,
@@ -686,6 +698,7 @@ export const getAllGEBCByUser = async (req, res) => {
       sc.name AS sub_category_name,
       c.french_name AS category_french_name,
       sc.french_name AS sub_category_french_name,
+      orig.name AS original_name,
       orig.description AS original_description,
       orig.image AS original_image,
       orig_u.username AS original_username,
@@ -705,6 +718,7 @@ export const getAllGEBCByUser = async (req, res) => {
       if (row.shared_post_id) {
         row.original_post = {
           id: row.shared_post_id,
+          name: row.original_name,
           description: row.original_description,
           image: row.original_image,
           username: row.original_username,
@@ -749,6 +763,7 @@ export const getAllGEBCsByCategory = async (req, res) => {
     // Get GEBCs in the given category with pagination
     const query = `SELECT
       v.id AS id,
+      v.name,
       v.description,
       v.category AS category_id,
       v.sub_category AS sub_category_id,
@@ -767,6 +782,7 @@ export const getAllGEBCsByCategory = async (req, res) => {
       (SELECT COUNT(*) FROM GEBC_comment WHERE GEBC_comment.GEBC_id = v.id) AS comment_count,
       (SELECT COUNT(*) FROM like_GEBC WHERE like_GEBC.GEBC_id = v.id) AS total_likes,
       -- Original post details
+      orig.name AS original_name,
       orig.description AS original_description,
       orig.image AS original_image,
       orig_u.username AS original_username,
@@ -804,7 +820,7 @@ export const getAllGEBCsByCategory = async (req, res) => {
 
       acc[subCategoryId].GEBC_result.GEBCs.push({
         gebc_id: gebc.id, // Use 'id' instead of 'GEBC_id'
-        name: gebc.category_name,
+        name: gebc.name,
         description: gebc.description,
         image: gebc.image,
         user_id: gebc.user_id,
@@ -816,6 +832,7 @@ export const getAllGEBCsByCategory = async (req, res) => {
         shared_post_id: gebc.shared_post_id,
         original_post: gebc.shared_post_id ? {
           id: gebc.shared_post_id,
+          name: gebc.original_name,
           description: gebc.original_description,
           image: gebc.original_image,
           username: gebc.original_username,
@@ -889,6 +906,7 @@ export const getTopGEBWithMostComments = async (req, res) => {
     if (videoData.shared_post_id) {
       videoData.original_post = {
         id: videoData.shared_post_id,
+        name: videoData.original_name,
         description: videoData.original_description,
         image: videoData.original_image,
         username: videoData.original_username,
@@ -959,6 +977,7 @@ export const searchGEBCs = async (req, res) => {
       if (row.shared_post_id) {
         row.original_post = {
           id: row.shared_post_id,
+          name: row.original_name,
           description: row.original_description,
           image: row.original_image,
           username: row.original_username,

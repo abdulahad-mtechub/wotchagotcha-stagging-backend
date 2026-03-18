@@ -1041,4 +1041,19 @@ BEGIN
         ALTER TABLE public.item ADD COLUMN shared_post_id INT REFERENCES public.item(id) ON DELETE SET NULL;
     END IF;
 
+    -- QAFI
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='qafi' AND column_name='name') THEN
+        ALTER TABLE public.QAFI ADD COLUMN name VARCHAR(255);
+    END IF;
+
+    -- GEBC
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='gebc' AND column_name='name') THEN
+        ALTER TABLE public.GEBC ADD COLUMN name VARCHAR(255);
+    END IF;
+
+    -- NEWS
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='news' AND column_name='name') THEN
+        ALTER TABLE public.NEWS ADD COLUMN name VARCHAR(255);
+    END IF;
+
 END $$;
