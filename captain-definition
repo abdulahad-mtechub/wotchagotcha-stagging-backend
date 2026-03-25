@@ -2,12 +2,13 @@
 "schemaVersion": 2,
 "dockerfileLines": [
 "FROM node:20",
-"WORKDIR /src",
+"WORKDIR server.js",
 "COPY package*.json ./",
-"RUN npm i --force",
+"RUN npm ci --only=production",
 "COPY . .",
 "EXPOSE 3801",
-"CMD [\"npm\", \"run\", \"dev\"]"
+"CMD [\"npm\", \"start\"]"
 ],
 "caproverOneClickApp": null
 }
+
