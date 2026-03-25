@@ -1,0 +1,218 @@
+[
+  {
+    "category": {
+      "id": 1,
+      "name": "Frequently Used"
+    },
+    "subcategories": [
+      {
+        "id": 1,
+        "name": "Thoughts & Ideas"
+      },
+      {
+        "id": 2,
+        "name": "Emotions & Feelings"
+      },
+      {
+        "id": 3,
+        "name": "Actions & Reactions"
+      },
+      {
+        "id": 4,
+        "name": "Objects & Places"
+      }
+    ]
+  },
+  {
+    "category": {
+      "id": 2,
+      "name": "Smiley & Emotion"
+    },
+    "subcategories": [
+      {
+        "id": 5,
+        "name": "Thoughts & Ideas"
+      },
+      {
+        "id": 6,
+        "name": "Emotions & Feelings"
+      },
+      {
+        "id": 7,
+        "name": "Actions & Reactions"
+      },
+      {
+        "id": 8,
+        "name": "Objects & Places"
+      }
+    ]
+  },
+  {
+    "category": {
+      "id": 3,
+      "name": "People & Body"
+    },
+    "subcategories": [
+      {
+        "id": 9,
+        "name": "Thoughts & Ideas"
+      },
+      {
+        "id": 10,
+        "name": "Emotions & Feelings"
+      },
+      {
+        "id": 11,
+        "name": "Actions & Reactions"
+      },
+      {
+        "id": 12,
+        "name": "Objects & Places"
+      }
+    ]
+  },
+  {
+    "category": {
+      "id": 4,
+      "name": "Animals & Nature"
+    },
+    "subcategories": [
+      {
+        "id": 13,
+        "name": "Thoughts & Ideas"
+      },
+      {
+        "id": 14,
+        "name": "Emotions & Feelings"
+      },
+      {
+        "id": 15,
+        "name": "Actions & Reactions"
+      },
+      {
+        "id": 16,
+        "name": "Objects & Places"
+      }
+    ]
+  },
+  {
+    "category": {
+      "id": 5,
+      "name": "Food & Drink"
+    },
+    "subcategories": [
+      {
+        "id": 17,
+        "name": "Thoughts & Ideas"
+      },
+      {
+        "id": 18,
+        "name": "Emotions & Feelings"
+      },
+      {
+        "id": 19,
+        "name": "Actions & Reactions"
+      },
+      {
+        "id": 20,
+        "name": "Objects & Places"
+      }
+    ]
+  },
+  {
+    "category": {
+      "id": 6,
+      "name": "Travels & Places"
+    },
+    "subcategories": [
+      {
+        "id": 21,
+        "name": "Thoughts & Ideas"
+      },
+      {
+        "id": 22,
+        "name": "Emotions & Feelings"
+      },
+      {
+        "id": 23,
+        "name": "Actions & Reactions"
+      },
+      {
+        "id": 24,
+        "name": "Objects & Places"
+      }
+    ]
+  },
+  {
+    "category": {
+      "id": 7,
+      "name": "Objects"
+    },
+    "subcategories": [
+      {
+        "id": 25,
+        "name": "Thoughts & Ideas"
+      },
+      {
+        "id": 26,
+        "name": "Emotions & Feelings"
+      },
+      {
+        "id": 27,
+        "name": "Actions & Reactions"
+      },
+      {
+        "id": 28,
+        "name": "Objects & Places"
+      }
+    ]
+  },
+  {
+    "category": {
+      "id": 8,
+      "name": "Symbols"
+    },
+    "subcategories": [
+      {
+        "id": 29,
+        "name": "Thoughts & Ideas"
+      },
+      {
+        "id": 30,
+        "name": "Emotions & Feelings"
+      },
+      {
+        "id": 31,
+        "name": "Actions & Reactions"
+      },
+      {
+        "id": 32,
+        "name": "Objects & Places"
+      }
+    ]
+  },
+  {
+    "category": {
+      "id": 9,
+      "name": "Flags"
+    },
+    "subcategories": [
+      {
+        "id": 33,
+        "name": "Thoughts & Ideas"
+      },
+      {
+        "id": 34,
+        "name": "Emotions & Feelings"
+      },
+      {
+        "id": 35,
+        "name": "Actions & Reactions"
+      },
+      {
+        "id": 36,
+        "name": "Objects & Places"
+      }
+    ]
+  }
+]
