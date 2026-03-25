@@ -9,8 +9,8 @@ import { verification } from "../Middleware/Verification.js";
 
 const router = express.Router();
 
-router.use(verification);
-
+router.use(verification); 
+  
 router.get("/conversation/:otherUserId", getConversationWithUser);
 router.get("/unread-count", getUnreadCount);
 router.post("/mark-read", markMessagesRead);
