@@ -16,7 +16,8 @@ export default function setupMessagingSocket(server, fallbackDb) {
     cors: {
       origin: "*",
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-      credentials: true,
+      // Avoid browser CORS issues in production (origin "*" + credentials true is commonly rejected)
+      credentials: false,
       allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"]
     },
   });
