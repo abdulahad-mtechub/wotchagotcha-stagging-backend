@@ -2,7 +2,7 @@ import express from "express";
 import { 
   getConversationWithUser,
   getUnreadCount, 
-  markMessagesRead,
+  markMessagesRead, 
   getChatList
 } from "../Controllers/chat.controller.js";
 import { verification } from "../Middleware/Verification.js";
