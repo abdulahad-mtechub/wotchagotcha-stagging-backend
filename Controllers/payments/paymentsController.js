@@ -1,3 +1,4 @@
+import "dotenv/config";
 import stripe from "stripe";
 import {
   sendErrorResponse,
@@ -16,7 +17,8 @@ import {
   ERROR_USER_NOT_FOUND,
 } from "./constants.js";
 
-const stripeInstance = stripe(process.env.STRIPE_SECRET_KEY);
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripeInstance = stripe(stripeSecretKey || "");
 
 export const createCustomer = async (req, res) => {
   const userId = req.user.userId;
