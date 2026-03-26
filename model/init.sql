@@ -914,6 +914,14 @@ CREATE TABLE IF NOT EXISTS public.mondon_market_comment (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+CREATE TABLE IF NOT EXISTS public.mondon_market_like (
+    id SERIAL PRIMARY KEY,
+    item_id INT REFERENCES item(id) ON DELETE CASCADE NOT NULL,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT mondon_market_like_item_user_unique UNIQUE (item_id, user_id)
+);
 CREATE TABLE IF NOT EXISTS public.sport_like (
     id SERIAL PRIMARY KEY,
     sport_id INT REFERENCES sports(id) ON DELETE CASCADE NOT NULL,
