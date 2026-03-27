@@ -1171,6 +1171,53 @@ FROM table_counts;
   }
 };
 
+export const getUserProfileSummary = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const summaryQuery = `
+      SELECT
+        EXISTS(SELECT 1 FROM users WHERE id = $1 AND is_deleted = FALSE) AS "userExists",
+        (SELECT COUNT(*)::int FROM xpi_videos WHERE user_id = $1) AS "videoMania",
+        (SELECT COUNT(*)::int FROM pic_tours WHERE user_id = $1) AS "picTours",
+        (SELECT COUNT(*)::int FROM NEWS WHERE user_id = $1) AS "onNews",
+        (SELECT COUNT(*)::int FROM post_letters WHERE user_id = $1) AS "openLetters",
+        (SELECT COUNT(*)::int FROM QAFI WHERE user_id = $1) AS "qafi",
+        (SELECT COUNT(*)::int FROM GEBC WHERE user_id = $1) AS "ebic",
+        (SELECT COUNT(*)::int FROM sports WHERE user_id = $1) AS "sports",
+        (SELECT COUNT(*)::int FROM cinematics_videos WHERE user_id = $1) AS "cinematic",
+        (SELECT COUNT(*)::int FROM fan_star_videos WHERE user_id = $1) AS "fanStarZone",
+        (SELECT COUNT(*)::int FROM kid_vids_videos WHERE user_id = $1) AS "kidVids",
+        (SELECT COUNT(*)::int FROM tv_progmax_videos WHERE user_id = $1) AS "tvProgmax",
+        (SELECT COUNT(*)::int FROM learning_hobbies_videos WHERE user_id = $1) AS "learningAndHobbies",
+        (SELECT COUNT(*)::int FROM item WHERE user_id = $1) AS "mondoMarket"
+    `;
+
+    const { rows } = await pool.query(summaryQuery, [userId]);
+    const row = rows[0] || {};
+    if (!row.userExists) {
+      return res.status(404).json({
+        statusCode: 404,
+        message: "User not found",
+      });
+    }
+
+    // Remove helper field from response payload
+    const { userExists, ...counts } = row;
+    return res.status(200).json({
+      statusCode: 200,
+      userId: Number(userId),
+      counts,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      statusCode: 500,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
 export const sendWellcomeEmail = async (req, res) => {
   try {
     const { user_id } = req.body;
