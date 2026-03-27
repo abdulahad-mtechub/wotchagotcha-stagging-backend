@@ -19,6 +19,7 @@ import {
   getAllUsersByYears,
   getSpecificUser,
   getUserStats,
+  getUserProfileSummary,
   login,
   register,
   resetPassword,
@@ -65,6 +66,7 @@ userRoute.post("/createSubscription", createSubscription);
 userRoute.get("/getAllSubscribedUser", getAllSubscribedUser);
 userRoute.get("/getDashboardStats", getAdminDashboardStats);
 userRoute.get("/getUserStats/:user_id", getUserStats);
+userRoute.get("/profile-summary/:userId", getUserProfileSummary);
 userRoute.post("/sendWellcomeEmail", sendWellcomeEmail);
 userRoute.get(
   "/getAllDataOfDeletedUser/:user_id",
