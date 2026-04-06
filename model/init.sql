@@ -1064,4 +1064,36 @@ BEGIN
         ALTER TABLE public.NEWS ADD COLUMN name VARCHAR(255);
     END IF;
 
+    -- post_letters shared_post_id
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='post_letters' AND column_name='shared_post_id') THEN
+        ALTER TABLE public.post_letters ADD COLUMN shared_post_id INT REFERENCES public.post_letters(id) ON DELETE SET NULL;
+    END IF;
+
 END $$;
+
+-- Open Letter social tables
+CREATE TABLE IF NOT EXISTS public.like_post_letter (
+    id SERIAL PRIMARY KEY,
+    letter_id INT REFERENCES post_letters(id) ON DELETE CASCADE NOT NULL,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.comment_post_letter (
+    id SERIAL PRIMARY KEY,
+    letter_id INT REFERENCES post_letters(id) ON DELETE CASCADE NOT NULL,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    comment TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.report_post_letter (
+    id SERIAL PRIMARY KEY,
+    letter_id INT REFERENCES post_letters(id) ON DELETE CASCADE NOT NULL,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    reason TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);

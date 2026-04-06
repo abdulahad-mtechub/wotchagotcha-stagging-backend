@@ -27,6 +27,7 @@ export const createPostLetter = async (req, res) => {
       receiver_id,
       //   reciever_name,
       receiver_address,
+      shared_post_id,
     } = req.body;
     if (image?.length > 0 && video) {
       return res.status(400).json({
@@ -48,6 +49,77 @@ export const createPostLetter = async (req, res) => {
       return res
         .status(404)
         .json({ statusCode: 404, message: "user not exist" });
+    }
+
+    // post_letters.signature_id is NOT NULL — resolve when client omits it
+    let finalSignatureId =
+      signature_id != null && signature_id !== ""
+        ? Number(signature_id)
+        : null;
+    if (finalSignatureId != null && Number.isNaN(finalSignatureId)) {
+      return res.status(400).json({
+        statusCode: 400,
+        message: "Invalid signature_id",
+      });
+    }
+    if (finalSignatureId != null) {
+      const sigCheck = await pool.query(
+        "SELECT id FROM signature WHERE id = $1 AND user_id = $2",
+        [finalSignatureId, user_id]
+      );
+      if (sigCheck.rowCount === 0) {
+        return res.status(400).json({
+          statusCode: 400,
+          message: "signature_id not found or does not belong to this user",
+        });
+      }
+    } else if (
+      shared_post_id != null &&
+      shared_post_id !== "" &&
+      !Number.isNaN(Number(shared_post_id))
+    ) {
+      // Share/repost: reuse original letter's signature (sharer may have no signature row)
+      const orig = await pool.query(
+        "SELECT signature_id FROM post_letters WHERE id = $1",
+        [shared_post_id]
+      );
+      if (orig.rowCount === 0) {
+        return res.status(404).json({
+          statusCode: 404,
+          message: "shared_post_id not found",
+        });
+      }
+      const sid = orig.rows[0].signature_id;
+      if (sid == null) {
+        return res.status(400).json({
+          statusCode: 400,
+          message: "Original letter has no signature; cannot share",
+        });
+      }
+      const sigExists = await pool.query(
+        "SELECT id FROM signature WHERE id = $1",
+        [sid]
+      );
+      if (sigExists.rowCount === 0) {
+        return res.status(400).json({
+          statusCode: 400,
+          message: "Original letter signature no longer exists",
+        });
+      }
+      finalSignatureId = sid;
+    } else {
+      const defaultSig = await pool.query(
+        "SELECT id FROM signature WHERE user_id = $1 ORDER BY id ASC LIMIT 1",
+        [user_id]
+      );
+      if (defaultSig.rowCount === 0) {
+        return res.status(400).json({
+          statusCode: 400,
+          message:
+            "signature_id is required, or create a signature first for this user",
+        });
+      }
+      finalSignatureId = defaultSig.rows[0].id;
     }
     // console.log(req.body.receiver_type);
     // if (req.files.length) {
@@ -91,31 +163,34 @@ export const createPostLetter = async (req, res) => {
     //   mediaPath = `/letterMedia/${req.files[0].filename}`;
     // }
     console.log(mediaPath);
-    const isPaid = paid_status === "paid" || paid_status === true;
+    // DB check_paid_status: paid_status = (post_type = 'private') — public is always unpaid
+    const isPaid = post_type === "private";
     const createQuery = `INSERT INTO post_letters (user_id,post_type,receiver_type,disc_category , disc_sub_category,name,address,email,
             contact_no,subject_place,post_date,greetings,introduction,body,form_of_appeal,video,
-            signature_id,paid_status)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17 , $18) RETURNING *`;
+            signature_id,paid_status, shared_post_id)
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17 , $18, $19) RETURNING *`;
     const result = await pool.query(createQuery, [
       user_id,
       post_type,
       receiver_type,
       disc_category,
-      disc_sub_category,
-      name,
-      address,
-      email,
-      contact_no,
-      subject_place,
-      post_date,
-      greetings,
-      introduction,
-      body,
-      form_of_appeal,
+      disc_sub_category || null,
+      name || "",
+      address || "",
+      email || "",
+      contact_no || "",
+      subject_place || "",
+      post_date || new Date().toISOString(),
+      greetings || "",
+      introduction || "",
+      body || "",
+      form_of_appeal || "",
       image?.length > 0 ? null : mediaPath,
-      signature_id,
+      finalSignatureId,
       isPaid,
+      shared_post_id || null,
     ]);
+
     if (result.rowCount === 1) {
       // if (req.files[0].mimetype.startsWith("image/")) {
       if (image?.length > 0) {
@@ -167,7 +242,14 @@ export const createPostLetter = async (req, res) => {
           ) AS images,
           lru.username AS receiver_name,
           lru.image AS reciever_image,
-          lri.address AS receiver_address
+          lri.address AS receiver_address,
+          pl.shared_post_id,
+          orig.name AS original_name,
+          orig.address AS original_address,
+          orig.body AS original_body,
+          orig_u.username AS original_username,
+          orig_u.image AS original_user_image,
+          orig.created_at AS original_created_at
       FROM
           post_letters AS pl
       LEFT JOIN
@@ -183,6 +265,10 @@ export const createPostLetter = async (req, res) => {
           disc_category AS d ON pl.disc_category = d.id
        LEFT JOIN 
           disc_sub_category AS sc ON pl.disc_sub_category = sc.id
+       LEFT JOIN
+          post_letters AS orig ON pl.shared_post_id = orig.id
+       LEFT JOIN
+          users AS orig_u ON orig.user_id = orig_u.id
       
       WHERE
           pl.id = $1
@@ -190,11 +276,25 @@ export const createPostLetter = async (req, res) => {
           pl.id, pl.user_id, pl.post_type, pl.receiver_type, pl.disc_category, sc.name, pl.name, pl.address,
           pl.email, pl.contact_no, pl.subject_place, pl.post_date, pl.greetings, pl.introduction,
           pl.body, pl.form_of_appeal, pl.video, pl.signature_id, pl.paid_status, lru.username,lru.image,
-          u.image, lri.address, u.username,d.name;
+          u.image, lri.address, u.username,d.name, orig.id, orig_u.id;
 
         `,
         [result.rows[0].id]
       );
+      if (data.rows[0].shared_post_id) {
+        data.rows[0].original_post = {
+          id: data.rows[0].shared_post_id,
+          name: data.rows[0].original_name,
+          address: data.rows[0].original_address,
+          body: data.rows[0].original_body,
+          username: data.rows[0].original_username,
+          user_image: data.rows[0].original_user_image,
+          created_at: data.rows[0].original_created_at,
+        };
+      } else {
+        data.rows[0].original_post = null;
+      }
+
       return res.status(201).json({
         statusCode: 201,
         message: "Letter created successfully",
@@ -316,6 +416,9 @@ export const updatePostLetter = async (req, res) => {
     if (post_type !== undefined) {
       updateFields.push(`post_type = $${queryParams.length + 1}`);
       queryParams.push(post_type);
+      // Keep paid_status aligned with DB check_paid_status
+      updateFields.push(`paid_status = $${queryParams.length + 1}`);
+      queryParams.push(post_type === "private");
     }
 
     if (receiver_type !== undefined) {
@@ -387,10 +490,17 @@ export const updatePostLetter = async (req, res) => {
       queryParams.push(signature_id);
     }
 
-    if (paid_status !== undefined) {
+    if (paid_status !== undefined && post_type === undefined) {
+      const expectedPaid = oldImage[0].post_type === "private";
+      const wantsPaid = paid_status === "paid" || paid_status === true;
+      if (wantsPaid !== expectedPaid) {
+        return res.status(400).json({
+          statusCode: 400,
+          message: "Paid status wrong (set according to post type)",
+        });
+      }
       updateFields.push(`paid_status = $${queryParams.length + 1}`);
-      const isPaid = paid_status === "paid" || paid_status === true;
-      queryParams.push(isPaid);
+      queryParams.push(wantsPaid);
     }
 
     // Construct the full update query
@@ -977,10 +1087,17 @@ export const getAllLetter = async (req, res) => {
     pl.top_letter,
     sig.image AS signature_image,
     pl.paid_status,
-    COALESCE(ARRAY_AGG(pli.image), ARRAY[]::TEXT[]) AS images,
+    COALESCE(ARRAY_AGG(pli.image) FILTER (WHERE pli.id IS NOT NULL), ARRAY[]::TEXT[]) AS images,
     lru.username AS receiver_name,
     lru.image AS reciever_image,
-    lri.address AS receiver_address
+    lri.address AS receiver_address,
+    pl.shared_post_id,
+    orig.name AS original_name,
+    orig.address AS original_address,
+    orig.body AS original_body,
+    orig_u.username AS original_username,
+    orig_u.image AS original_user_image,
+    orig.created_at AS original_created_at
 FROM
     post_letters AS pl
     LEFT JOIN
@@ -998,6 +1115,10 @@ LEFT JOIN
     disc_category AS d ON pl.disc_category = d.id
     LEFT JOIN
     disc_sub_category AS sc ON pl.disc_sub_category = sc.id
+ LEFT JOIN
+    post_letters AS orig ON pl.shared_post_id = orig.id
+ LEFT JOIN
+    users AS orig_u ON orig.user_id = orig_u.id
 
     WHERE u.is_deleted=FALSE
 GROUP BY
@@ -1005,9 +1126,10 @@ GROUP BY
     pl.email, pl.contact_no, pl.subject_place, pl.post_date, pl.greetings, pl.introduction,
     pl.body, pl.form_of_appeal, pl.video, pl.signature_id, pl.paid_status, 
     lru.username,lru.image,
-    u.image, lri.address, u.username,d.name, sig.image, d.french_name, sc.french_name
+    u.image, lri.address, u.username,d.name, sig.image, d.french_name, sc.french_name, orig.id, orig_u.id
 ORDER BY pl.created_at DESC
   `;
+
 
     if (req.query.page === undefined && req.query.limit === undefined) {
     } else {
@@ -1023,10 +1145,26 @@ ORDER BY pl.created_at DESC
 
     if (req.query.page === undefined && req.query.limit === undefined) {
       // If no pagination is applied, don't calculate totalCategories and totalPages
+      const AllLetters = rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            address: row.original_address,
+            body: row.original_body,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      });
       res.status(200).json({
         statusCode: 200,
         totalLetters: rows.length,
-        AllLetters: rows,
+        AllLetters: AllLetters,
       });
     } else {
       // Calculate the total number of categories (without pagination)
@@ -1039,13 +1177,31 @@ ORDER BY pl.created_at DESC
       const totalLetters = totalLettersResult.rows[0].total;
       const totalPages = Math.ceil(totalLetters / perPage);
 
+      const AllLetter = rows.map((row) => {
+        if (row.shared_post_id) {
+          row.original_post = {
+            id: row.shared_post_id,
+            name: row.original_name,
+            address: row.original_address,
+            body: row.original_body,
+            username: row.original_username,
+            user_image: row.original_user_image,
+            created_at: row.original_created_at,
+          };
+        } else {
+          row.original_post = null;
+        }
+        return row;
+      });
+
       res.status(200).json({
         statusCode: 200,
         totalLetters,
         totalPages,
-        AllLetter: rows,
+        AllLetter: AllLetter,
       });
     }
+
   } catch (error) {
     console.error(error);
     res
@@ -2256,7 +2412,10 @@ export const getAllLettersByCategory = async (req, res) => {
           pl.signature_id,
           sig.image AS signature_image,
           pl.paid_status,
-          COALESCE(ARRAY_AGG(pli.image), ARRAY[]::TEXT[]) AS images,
+          COALESCE(
+            ARRAY_AGG(pli.image) FILTER (WHERE pli.image IS NOT NULL AND btrim(pli.image) <> ''),
+            ARRAY[]::TEXT[]
+          ) AS images,
           lru.username AS receiver_name,
           lru.image AS reciever_image,
           lri.address AS receiver_address
@@ -2295,6 +2454,20 @@ export const getAllLettersByCategory = async (req, res) => {
       offset,
     ]);
 
+    // Single URL for list cards — many UIs use `image` or wrongly prefix API base to `images[0]`
+    const rowsWithCover = rows.map((row) => {
+      const imgs = Array.isArray(row.images)
+        ? row.images.filter((x) => x != null && String(x).trim() !== "")
+        : [];
+      const cover = imgs[0] || row.video || null;
+      return {
+        ...row,
+        userimage: row.userimage ?? row.userImage,
+        image: cover,
+        images: imgs.length ? imgs : row.video ? [] : [],
+      };
+    });
+
     if (rowCount === 0) {
       return res.status(404).json({
         statusCode: 404,
@@ -2313,7 +2486,7 @@ export const getAllLettersByCategory = async (req, res) => {
     const totalPages = Math.ceil(totalLetters / limit);
 
     // grouping by sub category
-    const groupedLetters = rows.reduce((acc, curr) => {
+    const groupedLetters = rowsWithCover.reduce((acc, curr) => {
       if (!acc[curr.sub_category_name]) {
         acc[curr.sub_category_name] = {
           sub_category_name: curr.sub_category_name,
@@ -2351,6 +2524,197 @@ export const getAllLettersByCategory = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
+    res.status(500).json({ statusCode: 500, message: "Internal server error" });
+  }
+};
+
+export const likeUnlikePostLetter = async (req, res) => {
+  try {
+    const { letter_id, user_id } = req.body;
+    const checkLetterQuery = "SELECT * FROM post_letters WHERE id = $1";
+    const checkLetterResult = await pool.query(checkLetterQuery, [letter_id]);
+
+    if (checkLetterResult.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ statusCode: 404, message: "Letter not exist" });
+    }
+    const checkUserQuery =
+      "SELECT * FROM users WHERE id = $1 AND is_deleted=FALSE";
+    const checkUserResult = await pool.query(checkUserQuery, [user_id]);
+
+    if (checkUserResult.rowCount === 0) {
+      return res
+        .status(404)
+        .json({ statusCode: 404, message: "user not exist" });
+    }
+    // Check if the user has already liked the letter
+    const checkLikeQuery =
+      "SELECT * FROM like_post_letter WHERE letter_id = $1 AND user_id = $2";
+    const checkLikeResult = await pool.query(checkLikeQuery, [letter_id, user_id]);
+
+    if (checkLikeResult.rowCount > 0) {
+      const deleteQuery =
+        "DELETE FROM like_post_letter WHERE user_id=$1 AND letter_id=$2 RETURNING *";
+      const result = await pool.query(deleteQuery, [user_id, letter_id]);
+      if (result.rowCount === 1) {
+        return res.status(200).json({
+          statusCode: 200,
+          message: "Letter Unlike successfully",
+          data: result.rows[0],
+        });
+      }
+    }
+    const insertQuery =
+      "INSERT INTO like_post_letter (letter_id,user_id) VALUES($1,$2) RETURNING *";
+    const result = await pool.query(insertQuery, [letter_id, user_id]);
+    if (result.rowCount === 1) {
+      return res.status(201).json({
+        statusCode: 201,
+        message: "Letter like successfully",
+        data: result.rows[0],
+      });
+    }
+    res.status(400).json({ statusCode: 400, message: "Operation failed" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ statusCode: 500, message: "Internal server error" });
+  }
+};
+
+export const getAllLikesByLetter = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    let likeQuery = `
+      SELECT
+        l.*,
+        u.username AS username,
+        u.image AS userImage,
+        pl.name AS letter_name,
+        pl.subject_place,
+        pl.post_date
+      FROM like_post_letter l
+      LEFT JOIN users u ON l.user_id = u.id
+      LEFT JOIN post_letters pl ON l.letter_id = pl.id
+      WHERE l.letter_id = $1 AND u.is_deleted=FALSE
+      ORDER BY l.created_at DESC;
+    `;
+
+    const { rows } = await pool.query(likeQuery, [id]);
+    res.status(200).json({
+      statusCode: 200,
+      totalLikes: rows.length,
+      AllLikes: rows,
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ statusCode: 500, message: "Internal server error", error });
+  }
+};
+
+// ─── COMMENT ─────────────────────────────────────────────────────────────────
+
+export const sendCommentOnLetter = async (req, res) => {
+  try {
+    const { letter_id, user_id, comment } = req.body;
+    if (!letter_id || !user_id || !comment) {
+      return res.status(400).json({ statusCode: 400, message: "letter_id, user_id and comment are required" });
+    }
+
+    const checkLetter = await pool.query("SELECT id FROM post_letters WHERE id=$1", [letter_id]);
+    if (checkLetter.rowCount === 0) {
+      return res.status(404).json({ statusCode: 404, message: "Letter not found" });
+    }
+
+    const checkUser = await pool.query("SELECT id FROM users WHERE id=$1 AND is_deleted=FALSE", [user_id]);
+    if (checkUser.rowCount === 0) {
+      return res.status(404).json({ statusCode: 404, message: "User not found" });
+    }
+
+    const insert = await pool.query(
+      "INSERT INTO comment_post_letter (letter_id, user_id, comment) VALUES ($1,$2,$3) RETURNING *",
+      [letter_id, user_id, comment]
+    );
+
+    const full = await pool.query(
+      `SELECT c.*, u.username, u.image AS userImage
+       FROM comment_post_letter c
+       LEFT JOIN users u ON c.user_id = u.id
+       WHERE c.id=$1`,
+      [insert.rows[0].id]
+    );
+
+    return res.status(201).json({ statusCode: 201, message: "Comment posted successfully", data: full.rows[0] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ statusCode: 500, message: "Internal server error" });
+  }
+};
+
+export const getAllCommentsByLetter = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const checkLetter = await pool.query("SELECT id FROM post_letters WHERE id=$1", [id]);
+    if (checkLetter.rowCount === 0) {
+      return res.status(404).json({ statusCode: 404, message: "Letter not found" });
+    }
+
+    const { rows } = await pool.query(
+      `SELECT c.*, u.username, u.image AS userImage
+       FROM comment_post_letter c
+       LEFT JOIN users u ON c.user_id = u.id
+       WHERE c.letter_id=$1 AND u.is_deleted=FALSE
+       ORDER BY c.created_at DESC`,
+      [id]
+    );
+
+    return res.status(200).json({ statusCode: 200, totalComments: rows.length, AllComments: rows });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ statusCode: 500, message: "Internal server error", error });
+  }
+};
+
+// ─── REPORT ──────────────────────────────────────────────────────────────────
+
+export const reportLetter = async (req, res) => {
+  try {
+    const { letter_id, user_id, reason } = req.body;
+    if (!letter_id || !user_id) {
+      return res.status(400).json({ statusCode: 400, message: "letter_id and user_id are required" });
+    }
+
+    const checkLetter = await pool.query("SELECT id FROM post_letters WHERE id=$1", [letter_id]);
+    if (checkLetter.rowCount === 0) {
+      return res.status(404).json({ statusCode: 404, message: "Letter not found" });
+    }
+
+    const checkUser = await pool.query("SELECT id FROM users WHERE id=$1 AND is_deleted=FALSE", [user_id]);
+    if (checkUser.rowCount === 0) {
+      return res.status(404).json({ statusCode: 404, message: "User not found" });
+    }
+
+    // Prevent duplicate reports from the same user
+    const alreadyReported = await pool.query(
+      "SELECT id FROM report_post_letter WHERE letter_id=$1 AND user_id=$2",
+      [letter_id, user_id]
+    );
+    if (alreadyReported.rowCount > 0) {
+      return res.status(400).json({ statusCode: 400, message: "You have already reported this letter" });
+    }
+
+    const result = await pool.query(
+      "INSERT INTO report_post_letter (letter_id, user_id, reason) VALUES ($1,$2,$3) RETURNING *",
+      [letter_id, user_id, reason || null]
+    );
+
+    return res.status(201).json({ statusCode: 201, message: "Letter reported successfully", data: result.rows[0] });
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ statusCode: 500, message: "Internal server error" });
   }
 };
