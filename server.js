@@ -7,7 +7,6 @@ import bodyParser from "body-parser";
 import path from "path";
 import dbConfig from "./db.config/index.js";
 import { fileURLToPath } from "url";
-import setCorsHeaders from "./Middleware/corsMiddleware.js";
 import userRoute from "./routes/user.routes.js";
 import appCategory from "./routes/appCategory.routes.js";
 import videoCategoryRoute from "./routes/videoCategory.routes.js";
@@ -97,6 +96,7 @@ import reportedUserRoute from "./routes/reportedUser.routes.js";
 import itemReportRoute from "./routes/itemReport.routes.js";
 import followerRoute from "./routes/follower.routes.js";
 import chatRoute from "./routes/chat.routes.js";
+import agoraRoute from "./routes/agora.routes.js";
 import setupMessagingSocket from "./Sockets/messaging.socket.js";
 
 import cron from "node-cron";
@@ -108,7 +108,16 @@ const port = 3801;
 const { json } = pkg;
 dotenv.config();
 app.use(express.json());
-app.use(setCorsHeaders);
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
+    credentials: false,
+    optionsSuccessStatus: 204,
+  })
+);
+app.options("*", cors());
 app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(express.static(path.join(__dirname, "uploads")));
@@ -217,19 +226,10 @@ app.use("/reported_user", reportedUserRoute);
 app.use("/itemReport", itemReportRoute);
 app.use("/follower", followerRoute);
 app.use("/api/v1/chat", chatRoute);
+app.use("/agora", agoraRoute);
 app.use("/test", (req, res) => {
   res.send("hello");
 });
-const corsOptions = {
-  origin: "*",
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  allowedHeaders: "Content-Type, Authorization",
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
-
-};
-app.use(cors(corsOptions));
-
 // Schedule the cron job to run daily at midnight
 cron.schedule("0 0 * * *", () => {
   console.log("Running cron job to update banner statuses");

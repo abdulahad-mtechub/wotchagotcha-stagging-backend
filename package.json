@@ -19,6 +19,8 @@
   },
   "homepage": "https://github.com/MuhammadMTechHub/CRM-inventory-backend#readme",
   "dependencies": {
+    "agora-access-token": "^2.0.4",
+    "agora-token": "^2.0.5",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
     "cloudinary": "^2.6.1",
