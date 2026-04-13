@@ -1,10 +1,22 @@
 import express from "express";
 import pkg from "agora-token";
 import pool from "../db.config/index.js";
+import { verification } from "../Middleware/Verification.js";
+import { getFirebaseAdmin } from "../utils/firebaseAdmin.js";
 
 const { RtcTokenBuilder, RtcRole } = pkg;
 const router = express.Router();
 const livePresence = new Map();
+let pushColumnReady = false;
+
+const ensureUserPushColumn = async () => {
+  if (pushColumnReady) return;
+  await pool.query(`
+    ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS fcm_token TEXT
+  `);
+  pushColumnReady = true;
+};
 
 router.post("/token", async (req, res) => {
   try {
@@ -121,10 +133,65 @@ router.post("/notify-live", async (req, res) => {
       channelName,
     ]);
 
+    // Best-effort FCM push broadcast to all registered users except sender.
+    let pushSentCount = 0;
+    try {
+      await ensureUserPushColumn();
+      const tokenRes = await pool.query(
+        "SELECT fcm_token FROM users WHERE id <> $1 AND is_deleted = FALSE AND fcm_token IS NOT NULL AND TRIM(fcm_token) <> ''",
+        [sender_id]
+      );
+      const registrationTokens = tokenRes.rows.map((r) => r.fcm_token).filter(Boolean);
+      const firebaseAdmin = getFirebaseAdmin();
+      if (firebaseAdmin && registrationTokens.length > 0) {
+        const fcmResponse = await firebaseAdmin.messaging().sendEachForMulticast({
+          tokens: registrationTokens,
+          notification: {
+            title,
+            body: content,
+          },
+          data: {
+            moduletype: "live_stream",
+            channelName: String(channelName),
+            route: `/live-stream/${channelName}?role=audience`,
+          },
+          webpush: {
+            fcmOptions: {
+              link: `/live-stream/${channelName}?role=audience`,
+            },
+          },
+        });
+        pushSentCount = fcmResponse.successCount || 0;
+
+        // Clear invalid tokens to keep users table clean.
+        const invalidTokens = [];
+        fcmResponse.responses.forEach((resp, idx) => {
+          if (!resp.success) {
+            const code = resp?.error?.code || "";
+            if (
+              code.includes("registration-token-not-registered") ||
+              code.includes("invalid-argument")
+            ) {
+              invalidTokens.push(registrationTokens[idx]);
+            }
+          }
+        });
+        if (invalidTokens.length > 0) {
+          await pool.query(
+            "UPDATE users SET fcm_token = NULL WHERE fcm_token = ANY($1::text[])",
+            [invalidTokens]
+          );
+        }
+      }
+    } catch (pushErr) {
+      console.error("Live push notification failed:", pushErr?.message || pushErr);
+    }
+
     return res.status(201).json({
       success: true,
       message: "Live notification sent.",
       sentCount: result.rowCount || 0,
+      pushSentCount,
     });
   } catch (error) {
     return res.status(500).json({
@@ -134,10 +201,40 @@ router.post("/notify-live", async (req, res) => {
   }
 });
 
+router.post("/push/register", verification, async (req, res) => {
+  try {
+    const userId = req?.user?.userId;
+    const { pushToken } = req.body || {};
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized." });
+    }
+    if (!pushToken || String(pushToken).trim() === "") {
+      return res.status(400).json({ success: false, message: "pushToken is required." });
+    }
+    await ensureUserPushColumn();
+    await pool.query(
+      "UPDATE users SET fcm_token = $2 WHERE id = $1 AND is_deleted = FALSE",
+      [userId, String(pushToken).trim()]
+    );
+    return res.status(200).json({ success: true, message: "Push token registered." });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error?.message || "Failed to register push token.",
+    });
+  }
+});
+
 router.post("/presence/join", async (req, res) => {
   try {
     const { channelName, userId } = req.body || {};
-    if (!channelName || !userId) {
+    // Do not use !userId — numeric 0 is a valid id in some systems; reject only null/undefined/empty string
+    if (
+      !channelName ||
+      userId === undefined ||
+      userId === null ||
+      String(userId).trim() === ""
+    ) {
       return res.status(400).json({ success: false, message: "channelName and userId are required." });
     }
 
@@ -158,7 +255,12 @@ router.post("/presence/join", async (req, res) => {
 router.post("/presence/leave", async (req, res) => {
   try {
     const { channelName, userId } = req.body || {};
-    if (!channelName || !userId) {
+    if (
+      !channelName ||
+      userId === undefined ||
+      userId === null ||
+      String(userId).trim() === ""
+    ) {
       return res.status(400).json({ success: false, message: "channelName and userId are required." });
     }
 
@@ -176,7 +278,14 @@ router.post("/presence/leave", async (req, res) => {
 
 router.get("/presence/:channelName", async (req, res) => {
   try {
-    const { channelName } = req.params;
+    let { channelName } = req.params;
+    if (channelName) {
+      try {
+        channelName = decodeURIComponent(channelName);
+      } catch {
+        /* keep raw */
+      }
+    }
     const participants = livePresence.has(channelName)
       ? Array.from(livePresence.get(channelName))
       : [];
