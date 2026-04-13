@@ -1,33 +1,11 @@
-
-
-// export const databaseConfig = { 
-//     // user: 'watchgoth_user', 
-//     // host : 'postgres-staging-projects.mtechub.com',
-//     // database: 'watchgotha_db',
-//     // password: 'mtechub123',
-//     // port: 5432,
-//     host: 'postgres-staging-projects.mtechub.com',
-//     user: 'postgres',
-//     database: 'watchgotha',
-//     password: 'mtechub123',
-//     port: 5432,
-// };
-
-
-
-
+import "dotenv/config";
 
 export const databaseConfig = {
-    // user: 'watchgoth_user',
-    // host: 'postgres-staging-projects.mtechub.com',
-    // database: 'watchgotha_db',
-    // password: 'mtechub123',
-    // port: 5432,
-    host: 'postgres-testing.cp.mtechub.org',
-    user: 'postgres',
-    database: 'watchagocha-db',
-    password: 'Mtechub@123',
-    port: 5432,
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "postgres",
+  password: process.env.DB_PASSWORD ?? "",
+  database: process.env.DB_NAME || "watchagocha-db",
+  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
 };
 
 

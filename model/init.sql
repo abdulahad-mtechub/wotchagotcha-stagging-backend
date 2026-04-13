@@ -27,8 +27,24 @@ CREATE TABLE IF NOT EXISTS public.app_category (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+CREATE TABLE IF NOT EXISTS public.app_sub_category (
+    id SERIAL PRIMARY KEY,
+    category_id INT REFERENCES app_category(id) ON DELETE CASCADE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    french_name VARCHAR(255),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 CREATE TABLE IF NOT EXISTS public.item_category (
     id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    french_name VARCHAR(255),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS public.item_sub_category (
+    id SERIAL PRIMARY KEY,
+    category_id INT REFERENCES item_category(id) ON DELETE CASCADE NOT NULL,
     name VARCHAR(255) NOT NULL,
     french_name VARCHAR(255),
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -81,6 +97,7 @@ CREATE TABLE IF NOT EXISTS public.xpi_videos (
     sub_category INT REFERENCES video_sub_category(id) ON DELETE CASCADE NOT NULL,
     video TEXT NOT NULL,
     thumbnail TEXT NOT NULL,
+    top BOOLEAN DEFAULT FALSE,
     status VARCHAR(50) DEFAULT 'active',
     shared_post_id INT REFERENCES xpi_videos(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -89,7 +106,7 @@ CREATE TABLE IF NOT EXISTS public.xpi_videos (
 CREATE TABLE IF NOT EXISTS public.video_comment (
     id SERIAL PRIMARY KEY,
     video_id INT REFERENCES xpi_videos(id) ON DELETE CASCADE,
-    top_video_id INT REFERENCES top_video(id) ON DELETE CASCADE,
+    top_video_id INT,
     user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     comment TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -118,6 +135,11 @@ CREATE TABLE IF NOT EXISTS public.top_video (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE IF EXISTS public.video_comment
+    DROP CONSTRAINT IF EXISTS video_comment_top_video_id_fkey;
+ALTER TABLE IF EXISTS public.video_comment
+    ADD CONSTRAINT video_comment_top_video_id_fkey
+    FOREIGN KEY (top_video_id) REFERENCES public.top_video(id) ON DELETE CASCADE;
 -- Removed separate top_video_comment table: top-video comments are stored in `video_comment.top_video_id`
 CREATE TABLE IF NOT EXISTS public.top_video_like (
     id SERIAL PRIMARY KEY,
@@ -428,6 +450,7 @@ CREATE TABLE IF NOT EXISTS public.item (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     item_category INT REFERENCES item_category(id) ON DELETE CASCADE NOT NULL,
+    sub_category INT REFERENCES item_sub_category(id) ON DELETE SET NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     price BIGINT NOT NULL,
@@ -553,6 +576,40 @@ CREATE TABLE IF NOT EXISTS public.payment (
     id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     payment_detail jsonb NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Stripe payments audit table used by paymentsController
+CREATE TABLE IF NOT EXISTS public.stripe_payments (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    banner_id INT REFERENCES banner(id) ON DELETE SET NULL,
+    stripe_session_id TEXT,
+    provider_transaction_id TEXT UNIQUE,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    amount_cents BIGINT,
+    amount_decimal DECIMAL(12, 2),
+    currency VARCHAR(10),
+    price_id TEXT,
+    product_id TEXT,
+    payment_method TEXT,
+    customer_id TEXT,
+    receipt_url TEXT,
+    raw_response JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Subscription records linked to stripe_payments
+CREATE TABLE IF NOT EXISTS public.subscription (
+    id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    plan_id VARCHAR(255),
+    price DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    status VARCHAR(50) NOT NULL DEFAULT 'active',
+    transaction_id INT REFERENCES stripe_payments(id) ON DELETE SET NULL,
+    expired_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -986,6 +1043,14 @@ CREATE TABLE IF NOT EXISTS public.follow (
     CONSTRAINT unique_follow UNIQUE (follower_id, following_id)
 );
 
+CREATE TABLE IF NOT EXISTS public.user_profile_likes (
+    id SERIAL PRIMARY KEY,
+    liked_user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    liked_by_user_id INT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT unique_user_profile_like UNIQUE (liked_user_id, liked_by_user_id)
+);
+
 -- ─── Migration: Add shared_post_id to existing tables ─────────────────────
 DO $$
 BEGIN
@@ -1067,6 +1132,57 @@ BEGIN
     -- post_letters shared_post_id
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='post_letters' AND column_name='shared_post_id') THEN
         ALTER TABLE public.post_letters ADD COLUMN shared_post_id INT REFERENCES public.post_letters(id) ON DELETE SET NULL;
+    END IF;
+
+    -- users profile/location visibility fields used by APIs
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='city') THEN
+        ALTER TABLE public.users ADD COLUMN city VARCHAR(255);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='country') THEN
+        ALTER TABLE public.users ADD COLUMN country VARCHAR(255);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='province') THEN
+        ALTER TABLE public.users ADD COLUMN province VARCHAR(255);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='profession') THEN
+        ALTER TABLE public.users ADD COLUMN profession VARCHAR(255);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='state') THEN
+        ALTER TABLE public.users ADD COLUMN state VARCHAR(255);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='region') THEN
+        ALTER TABLE public.users ADD COLUMN region VARCHAR(255);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='hide_email') THEN
+        ALTER TABLE public.users ADD COLUMN hide_email BOOLEAN DEFAULT FALSE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='hide_location') THEN
+        ALTER TABLE public.users ADD COLUMN hide_location BOOLEAN DEFAULT FALSE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='hide_profession') THEN
+        ALTER TABLE public.users ADD COLUMN hide_profession BOOLEAN DEFAULT FALSE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='bio') THEN
+        ALTER TABLE public.users ADD COLUMN bio TEXT;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='is_premium') THEN
+        ALTER TABLE public.users ADD COLUMN is_premium BOOLEAN DEFAULT FALSE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='xpi_videos' AND column_name='top') THEN
+        ALTER TABLE public.xpi_videos ADD COLUMN top BOOLEAN DEFAULT FALSE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='banner_subscript_key') THEN
+        ALTER TABLE public.users ADD COLUMN banner_subscript_key VARCHAR(255);
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='premium_subscription_key') THEN
+        ALTER TABLE public.users ADD COLUMN premium_subscription_key VARCHAR(255);
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name='banner' AND column_name='transaction_id'
+    ) THEN
+        ALTER TABLE public.banner ADD COLUMN transaction_id VARCHAR(255);
     END IF;
 
 END $$;
