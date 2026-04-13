@@ -8,6 +8,11 @@ const generateRoomId = (userId1, userId2) => {
 };
 
 const connectedUsers = new Map();
+/** @type {Map<string, Array<{id: string, senderId: number|string, username: string, senderImage: string|null, content: string, createdAt: string}>>} */
+const liveStreamChatByChannel = new Map();
+
+const liveStreamRoomId = (channelName) =>
+  `livestream_${String(channelName || '').replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
 export default function setupMessagingSocket(server, fallbackDb) {
   const pool = db || fallbackDb;
@@ -105,6 +110,75 @@ export default function setupMessagingSocket(server, fallbackDb) {
       } catch (err) {
         console.error(`send_message error: ${err.message}`);
         socket.emit('message_error', { error: true, message: err.message });
+      }
+    });
+
+    socket.on('join_live_stream', ({ channelName }) => {
+      try {
+        if (!socket.userId) {
+          return socket.emit('live_stream_error', { message: 'User not authenticated' });
+        }
+        const normalizedChannelName = String(channelName || '').trim();
+        if (!normalizedChannelName) {
+          return socket.emit('live_stream_error', { message: 'channelName required' });
+        }
+        const room = liveStreamRoomId(normalizedChannelName);
+        socket.join(room);
+        const history = liveStreamChatByChannel.get(normalizedChannelName) || [];
+        socket.emit('live_stream_chat_history', {
+          channelName: normalizedChannelName,
+          messages: history.slice(-50),
+        });
+      } catch (err) {
+        console.error(`join_live_stream error: ${err.message}`);
+        socket.emit('live_stream_error', { message: err.message });
+      }
+    });
+
+    socket.on('leave_live_stream', ({ channelName }) => {
+      try {
+        if (!channelName) return;
+        socket.leave(liveStreamRoomId(channelName));
+      } catch (err) {
+        console.error(`leave_live_stream error: ${err.message}`);
+      }
+    });
+
+    socket.on('live_stream_chat', ({ channelName, content, username, senderImage }) => {
+      try {
+        if (!socket.userId) {
+          return socket.emit('live_stream_error', { message: 'User not authenticated' });
+        }
+        const normalizedChannelName = String(channelName || '').trim();
+        if (!normalizedChannelName) {
+          return socket.emit('live_stream_error', { message: 'channelName required' });
+        }
+        const text = String(content || '').trim();
+        if (!text) return;
+        if (text.length > 2000) {
+          return socket.emit('live_stream_error', { message: 'Message too long' });
+        }
+        const msg = {
+          id: `ls_${Date.now()}_${socket.id}`,
+          channelName: normalizedChannelName,
+          senderId: socket.userId,
+          username: username || `User ${socket.userId}`,
+          senderImage: senderImage || null,
+          content: text,
+          createdAt: new Date().toISOString(),
+        };
+        if (!liveStreamChatByChannel.has(normalizedChannelName)) {
+          liveStreamChatByChannel.set(normalizedChannelName, []);
+        }
+        const arr = liveStreamChatByChannel.get(normalizedChannelName);
+        arr.push(msg);
+        if (arr.length > 200) {
+          arr.splice(0, arr.length - 200);
+        }
+        io.to(liveStreamRoomId(normalizedChannelName)).emit('live_stream_chat_message', msg);
+      } catch (err) {
+        console.error(`live_stream_chat error: ${err.message}`);
+        socket.emit('live_stream_error', { message: err.message });
       }
     });
 
