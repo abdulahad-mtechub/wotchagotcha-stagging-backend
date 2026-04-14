@@ -63,6 +63,7 @@ export const login = async (req, res) => {
         block: rows[0].block,
         image: rows[0].image,
         device_id: deviceId || rows[0].device_id,
+        fcm_token: rows[0].fcm_token || null,
         city: rows[0].city,
         country: rows[0].country,
         province: rows[0].province,
